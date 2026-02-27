@@ -4,8 +4,14 @@ import { customers } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { getAllCustomers, getCustomerByEmail } from "@/lib/queries/customer-queries";
 import { customerSchema } from "@/lib/validations";
+import { isAdminAuthorized } from "@/lib/auth";
 
-export async function GET() {
+export async function GET(request: NextRequest) {
+  // Customer list is admin-only
+  if (!isAdminAuthorized(request)) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   const result = await getAllCustomers();
   return NextResponse.json(result);
 }

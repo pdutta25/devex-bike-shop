@@ -85,6 +85,20 @@ export async function POST(request: NextRequest) {
     .returning()
     .get()!;
 
+  // Verify stock availability before creating order
+  for (const item of cart.items) {
+    const product = db.select({ stockQuantity: products.stockQuantity })
+      .from(products)
+      .where(eq(products.id, item.productId))
+      .get();
+    if (!product || product.stockQuantity < item.quantity) {
+      return NextResponse.json(
+        { error: `Insufficient stock for ${item.productName}` },
+        { status: 400 }
+      );
+    }
+  }
+
   // Create order items and decrement stock
   for (const item of cart.items) {
     db.insert(orderItems)

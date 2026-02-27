@@ -1,7 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { seedAll, seedProducts, seedCustomersAndOrders, seedReviews, resetAllData } from "@/lib/seed";
+import { isAdminAuthorized } from "@/lib/auth";
 
 export async function POST(request: NextRequest) {
+  if (!isAdminAuthorized(request)) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   const { action } = await request.json();
 
   try {

@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { customers } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { getCustomerById } from "@/lib/queries/customer-queries";
+import { customerSchema } from "@/lib/validations";
 
 export async function GET(_: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -15,9 +16,15 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
   const { id } = await params;
   const body = await request.json();
 
+  // Validate with schema to prevent mass assignment
+  const parsed = customerSchema.partial().safeParse(body);
+  if (!parsed.success) {
+    return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
+  }
+
   const result = db
     .update(customers)
-    .set({ ...body, updatedAt: new Date().toISOString() })
+    .set({ ...parsed.data, updatedAt: new Date().toISOString() })
     .where(eq(customers.id, Number(id)))
     .returning()
     .get();
