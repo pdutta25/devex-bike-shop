@@ -64,6 +64,9 @@ export function Header() {
                 <span className="text-white">Bike Shop</span>
               </span>
             </div>
+            <span className="ml-2 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-widest bg-brand-accent/15 text-brand-accent border border-brand-accent/25 leading-none">
+              Demo
+            </span>
           </Link>
 
           {/* Desktop Nav */}
