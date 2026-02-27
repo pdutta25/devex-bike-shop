@@ -143,8 +143,18 @@ export function Footer() {
           </div>
         </div>
 
+        {/* Demo disclaimer */}
+        <div className="mt-16 pt-6 border-t border-white/5">
+          <div className="flex items-center justify-center gap-2 text-[11px] text-gray-600 bg-white/[0.02] rounded-lg py-2.5 px-4">
+            <svg className="w-3.5 h-3.5 text-gray-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span>This is a demo application for showcase purposes only. No real payments, transactions, or monetization are involved.</span>
+          </div>
+        </div>
+
         {/* Bottom bar */}
-        <div className="mt-16 pt-8 border-t border-white/5 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-gray-600">
+        <div className="mt-6 pt-6 border-t border-white/5 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-gray-600">
           <span>&copy; {new Date().getFullYear()} DevEx Bike Shop. All rights reserved.</span>
           <div className="flex gap-6">
             <span className="hover:text-gray-400 cursor-pointer transition-colors">Privacy Policy</span>
