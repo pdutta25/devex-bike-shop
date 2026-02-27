@@ -111,3 +111,12 @@ sqlite.exec(`
 
 export const db = drizzle(sqlite, { schema });
 export { sqlite };
+
+// Auto-seed if database is empty (handles Render's ephemeral storage)
+const rowCount = sqlite.prepare("SELECT COUNT(*) as count FROM categories").get() as { count: number };
+if (rowCount.count === 0) {
+  console.log("🌱 Empty database detected — auto-seeding...");
+  import("@/lib/seed").then(({ seedAll }) =>
+    seedAll().then((r) => console.log("✅ Auto-seed complete:", r))
+  ).catch((err) => console.error("❌ Auto-seed failed:", err));
+}
