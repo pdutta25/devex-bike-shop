@@ -11,7 +11,7 @@ pipeline:
     - stage:
         name: DEV - Deploy and Certify
         identifier: DEV_Deploy_and_Certify
-        type: Custom
+        type: Deployment
         failureStrategies:
           - onFailure:
               errors:
@@ -19,6 +19,13 @@ pipeline:
               action:
                 type: MarkAsFailure
         spec:
+          deploymentType: CustomDeployment
+          service:
+            serviceRef: devexbikeshop
+          environment:
+            environmentRef: DEV
+            deployToAll: false
+            infrastructureDefinitions: []
           execution:
             steps:
               # ── Step 1: Provision DEV Infrastructure (Simulated Terraform) ──
@@ -270,7 +277,7 @@ pipeline:
     - stage:
         name: SIT - Deploy and Certify
         identifier: SIT_Deploy_and_Certify
-        type: Custom
+        type: Deployment
         failureStrategies:
           - onFailure:
               errors:
@@ -278,6 +285,13 @@ pipeline:
               action:
                 type: MarkAsFailure
         spec:
+          deploymentType: CustomDeployment
+          service:
+            serviceRef: devexbikeshop
+          environment:
+            environmentRef: SIT
+            deployToAll: false
+            infrastructureDefinitions: []
           execution:
             steps:
               # ── Step 1: Deploy to SIT ──
@@ -505,7 +519,7 @@ pipeline:
     - stage:
         name: PROD - Deploy and Certify
         identifier: PROD_Deploy_and_Certify
-        type: Custom
+        type: Deployment
         failureStrategies:
           - onFailure:
               errors:
@@ -513,6 +527,13 @@ pipeline:
               action:
                 type: MarkAsFailure
         spec:
+          deploymentType: CustomDeployment
+          service:
+            serviceRef: devexbikeshop
+          environment:
+            environmentRef: PROD
+            deployToAll: false
+            infrastructureDefinitions: []
           execution:
             steps:
               # ── Step 1: Approve Deploy to PROD (Manual) ──
