@@ -930,39 +930,25 @@ pipeline:
                             exit 1
                           fi
 
-                          # ── Wait for Render build + deploy ──
+                          # ── Wait for Render to be live ──
                           echo ""
-                          echo "⏳ Waiting for Render to build and deploy (this takes ~90s)..."
-                          sleep 90
-
-                          # ── Health Check ──
-                          echo ""
-                          echo "🔍 Running production health check..."
-                          MAX_RETRIES=12
-                          RETRY_INTERVAL=15
+                          echo "⏳ Waiting for Render to come online..."
                           APP_URL="<+secrets.getValue("render_app_url")>"
-
-                          for i in $(seq 1 $MAX_RETRIES); do
-                            STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$APP_URL")
-                            if [ "$STATUS" == "200" ]; then
+                          TIMEOUT=300        # max wait time in seconds (5 min)
+                          INTERVAL=10        # poll every 10 seconds
+                          ELAPSED=0
+                          while [ $ELAPSED -lt $TIMEOUT ]; do
+                            STATUS=$(curl -s -L -o /dev/null -w "%{http_code}" --max-time 10 "$APP_URL")
+                            if [ "$STATUS" -ge 200 ] && [ "$STATUS" -lt 400 ]; then
                               echo ""
-                              echo "┌──────────────────────────────────────┐"
-                              echo "│   PROD DEPLOYMENT SUMMARY            │"
-                              echo "├──────────────────────────────────────┤"
-                              echo "│ Environment:  PROD (Production)      │"
-                              echo "│ Status:       ✅ SUCCESS             │"
-                              echo "│ URL:          $APP_URL               │"
-                              echo "│ Health Check: HTTP $STATUS — LIVE    │"
-                              echo "└──────────────────────────────────────┘"
-                              echo ""
-                              echo "✅ Production deployment verified — app is LIVE"
+                              echo "✅ App is LIVE (HTTP $STATUS) after ~${ELAPSED}s"
                               exit 0
                             fi
-                            echo "   Attempt $i/$MAX_RETRIES: HTTP $STATUS — retrying in ${RETRY_INTERVAL}s..."
-                            sleep $RETRY_INTERVAL
+                            echo "   [${ELAPSED}s] HTTP $STATUS — not ready yet, retrying in ${INTERVAL}s..."
+                            sleep $INTERVAL
+                            ELAPSED=$((ELAPSED + INTERVAL))
                           done
-
-                          echo "❌ Health check failed after $MAX_RETRIES attempts"
+                          echo "❌ Health check timed out after ${TIMEOUT}s"
                           exit 1
 
               # ── Step 4: PROD Smoke Tests (Real) ──
