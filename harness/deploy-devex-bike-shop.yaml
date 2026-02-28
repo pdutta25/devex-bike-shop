@@ -12,6 +12,12 @@ pipeline:
         name: DEV - Deploy and Certify
         identifier: DEV_Deploy_and_Certify
         type: Custom
+        failureStrategies:
+          - onFailure:
+              errors:
+                - AllErrors
+              action:
+                type: MarkAsFailure
         spec:
           execution:
             steps:
@@ -258,7 +264,7 @@ pipeline:
                           echo ""
                           echo "✅ DEV smoke tests passed — build is healthy"
 
-              # ── Step 5: Certify DEV Build (Auto-Approve) ──
+              # ── Step 5: Certify DEV Build (Auto-Approve via timeout) ──
               - step:
                   name: Certify DEV Build
                   identifier: Certify_DEV_Build
@@ -292,6 +298,12 @@ pipeline:
         name: SIT - Deploy and Certify
         identifier: SIT_Deploy_and_Certify
         type: Custom
+        failureStrategies:
+          - onFailure:
+              errors:
+                - AllErrors
+              action:
+                type: MarkAsFailure
         spec:
           execution:
             steps:
@@ -675,6 +687,12 @@ pipeline:
         name: PROD - Deploy and Certify
         identifier: PROD_Deploy_and_Certify
         type: Custom
+        failureStrategies:
+          - onFailure:
+              errors:
+                - AllErrors
+              action:
+                type: MarkAsFailure
         spec:
           execution:
             steps:
@@ -881,7 +899,7 @@ pipeline:
 
               # ── Step 3: Deploy to PROD (Real — Render) ──
               - step:
-                  name: Deploy to PROD (Render)
+                  name: Deploy to PROD - Render
                   identifier: Deploy_to_PROD_Render
                   type: ShellScript
                   timeout: 10m
@@ -1021,7 +1039,7 @@ pipeline:
 
               # ── Step 5: Certify PROD Build — Final Sign-Off (Manual) ──
               - step:
-                  name: Certify PROD Build — Final Sign-Off
+                  name: Certify PROD Build - Final Sign-Off
                   identifier: Certify_PROD_Build_Final_SignOff
                   type: HarnessApproval
                   timeout: 1d
