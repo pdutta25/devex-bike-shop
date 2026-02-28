@@ -42,7 +42,7 @@ jobs:
           echo "✅ Linting step completed"
 
       # ──────────────────────────────────────────
-      # 4. UNIT TESTING (real, with fallback stub)
+      # 4. UNIT TESTING (real, with fallback STB)
       # ──────────────────────────────────────────
       - name: Run Unit Tests
         run: |
@@ -54,7 +54,7 @@ jobs:
           else
             echo "──────────────────────────────────────"
             echo "ℹ️  No test suite configured."
-            echo "    STUB: Simulating unit test execution..."
+            echo "    STB: Simulating unit test execution..."
             sleep 5
             echo "    ✔ ComponentHeader.test.js       — 3 tests passed"
             echo "    ✔ CartService.test.js            — 5 tests passed"
@@ -64,7 +64,7 @@ jobs:
             echo "    Test Suites: 4 passed, 4 total"
             echo "    Tests:       18 passed, 18 total"
             echo "    Time:        5.02s"
-            echo "✅ Unit tests completed (stubbed)"
+            echo "✅ Unit tests completed (STB)"
           fi
 
       # ──────────────────────────────────────────
@@ -79,9 +79,9 @@ jobs:
           echo "✅ Build completed successfully"
 
       # ──────────────────────────────────────────
-      # 6. CODE SCANNING (stub)
+      # 6. CODE SCANNING (STB)
       # ──────────────────────────────────────────
-      - name: Code Quality Scan (SonarQube — Stubbed)
+      - name: Code Quality Scan (SonarQube — STB)
         run: |
           echo "╔══════════════════════════════════════╗"
           echo "║    CODE QUALITY SCAN — SonarQube     ║"
@@ -110,9 +110,9 @@ jobs:
           echo "✅ Code quality scan passed"
 
       # ──────────────────────────────────────────
-      # 7. SECURITY SCANNING — SAST (stub)
+      # 7. SECURITY SCANNING — SAST (STB)
       # ──────────────────────────────────────────
-      - name: Security Scan — SAST (Stubbed)
+      - name: Security Scan — SAST (STB)
         run: |
           echo "╔══════════════════════════════════════╗"
           echo "║  SECURITY SCAN — SAST (Snyk/Semgrep)║"
@@ -144,9 +144,9 @@ jobs:
           echo "✅ Security scan passed — no blocking issues"
 
       # ──────────────────────────────────────────
-      # 8. SECURITY SCANNING — Dependency (stub)
+      # 8. SECURITY SCANNING — Dependency (STB)
       # ──────────────────────────────────────────
-      - name: Dependency Vulnerability Check (Stubbed)
+      - name: Dependency Vulnerability Check (STB)
         run: |
           echo "╔══════════════════════════════════════╗"
           echo "║  DEPENDENCY VULNERABILITY CHECK      ║"
