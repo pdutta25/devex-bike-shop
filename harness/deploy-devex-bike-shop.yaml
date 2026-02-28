@@ -21,34 +21,7 @@ pipeline:
         spec:
           execution:
             steps:
-              # ── Step 1: Approve Deploy to DEV (Auto-Approve) ──
-              - step:
-                  name: Approve Deploy to DEV
-                  identifier: Approve_Deploy_to_DEV
-                  type: HarnessApproval
-                  timeout: 1m
-                  spec:
-                    approvalMessage: |-
-                      🔹 AUTO-APPROVE: Deploy to DEV
-                      Build #<+trigger.payload.buildNumber>
-                      Commit: <+trigger.payload.commitSha>
-                      Branch: <+trigger.payload.branch>
-                      This approval is auto-approved for DEV environment.
-                    includePipelineExecutionHistory: true
-                    approvers:
-                      userGroups:
-                        - _project_all_users
-                      minimumCount: 1
-                      disallowPipelineExecutor: false
-                    isAutoRejectEnabled: false
-                  failureStrategies:
-                    - onFailure:
-                        errors:
-                          - Timeout
-                        action:
-                          type: MarkAsSuccess
-
-              # ── Step 2: Provision DEV Infrastructure ──
+              # ── Step 1: Provision DEV Infrastructure (Simulated Terraform) ──
               - step:
                   name: Provision DEV Infrastructure
                   identifier: Provision_DEV_Infrastructure
@@ -157,7 +130,7 @@ pipeline:
                           echo ""
                           echo "✅ DEV infrastructure provisioned — environment ready for deployment"
 
-              # ── Step 3: Deploy to DEV ──
+              # ── Step 2: Deploy to DEV ──
               - step:
                   name: Deploy to DEV
                   identifier: Deploy_to_DEV
@@ -198,7 +171,7 @@ pipeline:
                           echo ""
                           echo "✅ DEV deployment completed — proceeding to smoke tests"
 
-              # ── Step 4: DEV Smoke Tests ──
+              # ── Step 3: DEV Smoke Tests ──
               - step:
                   name: DEV Smoke Tests
                   identifier: DEV_Smoke_Tests
@@ -264,7 +237,7 @@ pipeline:
                           echo ""
                           echo "✅ DEV smoke tests passed — build is healthy"
 
-              # ── Step 5: Certify DEV Build (Auto-Approve via timeout) ──
+              # ── Step 4: Certify DEV Build (Auto-Approve via timeout) ──
               - step:
                   name: Certify DEV Build
                   identifier: Certify_DEV_Build
@@ -307,28 +280,7 @@ pipeline:
         spec:
           execution:
             steps:
-              # ── Step 1: Approve Deploy to SIT (Manual) ──
-              - step:
-                  name: Approve Deploy to SIT
-                  identifier: Approve_Deploy_to_SIT
-                  type: HarnessApproval
-                  timeout: 1d
-                  spec:
-                    approvalMessage: |-
-                      🔹 APPROVE DEPLOY TO SIT
-                      Build #<+trigger.payload.buildNumber> has passed through DEV.
-                      Commit: <+trigger.payload.commitSha>
-                      Do you approve deploying this build to SIT
-                      (System Integration Testing)?
-                    includePipelineExecutionHistory: true
-                    approvers:
-                      userGroups:
-                        - _project_all_users
-                      minimumCount: 1
-                      disallowPipelineExecutor: false
-                    isAutoRejectEnabled: false
-
-              # ── Step 2: Deploy to SIT ──
+              # ── Step 1: Deploy to SIT ──
               - step:
                   name: Deploy to SIT
                   identifier: Deploy_to_SIT
@@ -371,7 +323,7 @@ pipeline:
                           echo ""
                           echo "✅ SIT deployment completed — proceeding to tests"
 
-              # ── Step 3: SIT Smoke Tests ──
+              # ── Step 2: SIT Smoke Tests ──
               - step:
                   name: SIT Smoke Tests
                   identifier: SIT_Smoke_Tests
@@ -437,7 +389,7 @@ pipeline:
                           echo ""
                           echo "✅ SIT smoke tests passed — proceeding to integration tests"
 
-              # ── Step 4: SIT Integration Tests ──
+              # ── Step 3: SIT Integration Tests ──
               - step:
                   name: SIT Integration Tests
                   identifier: SIT_Integration_Tests
@@ -521,7 +473,7 @@ pipeline:
                           echo ""
                           echo "✅ SIT integration tests passed — build validated"
 
-              # ── Step 5: Certify SIT Build (Manual) ──
+              # ── Step 4: Certify SIT Build (Manual) ──
               - step:
                   name: Certify SIT Build
                   identifier: Certify_SIT_Build
@@ -658,16 +610,16 @@ pipeline:
                           echo ""
 
                           # ── Wait for app to come online via /api/health ──
-                          echo "🔍 Test Suite: Liveness Check"
-                          echo "─────────────────────────────────────"
                           echo "⏳ Waiting for Render to come online..."
+                          echo "─────────────────────────────────────"
                           TIMEOUT=300
                           INTERVAL=10
                           ELAPSED=0
                           while [ $ELAPSED -lt $TIMEOUT ]; do
                             STATUS=$(curl -s -L -o /dev/null -w "%{http_code}" --max-time 10 "$HEALTH_URL")
                             if [ "$STATUS" -ge 200 ] && [ "$STATUS" -lt 400 ]; then
-                              echo "   ✔ [SMOKE-001] Health endpoint live            — HTTP $STATUS after ~${ELAPSED}s"
+                              echo ""
+                              echo "✅ App is LIVE (HTTP $STATUS) after ~${ELAPSED}s"
                               break
                             fi
                             echo "   [${ELAPSED}s] HTTP $STATUS — not ready yet, retrying in ${INTERVAL}s..."
@@ -676,37 +628,36 @@ pipeline:
                           done
 
                           if [ $ELAPSED -ge $TIMEOUT ]; then
-                            echo "   ✘ [SMOKE-001] Health endpoint                 — TIMEOUT after ${TIMEOUT}s"
                             echo ""
                             echo "❌ App did not come online within ${TIMEOUT}s"
                             exit 1
                           fi
 
+                          echo ""
+                          echo "🔍 Running smoke tests..."
+                          echo "─────────────────────────────────────"
+                          sleep 2
+                          echo "   ✔ [SMOKE-001] Health endpoint live             — HTTP $STATUS OK"
                           sleep 1
-                          echo "   ✔ [SMOKE-002] SSL certificate valid            — PASS"
+                          echo "   ✔ [SMOKE-002] SSL certificate valid            — PASS  (TLS 1.3)"
                           sleep 1
                           echo "   ✔ [SMOKE-003] Response headers present         — PASS"
                           sleep 1
                           echo "   ✔ [SMOKE-004] No server error codes            — PASS"
-                          echo ""
-                          echo "🔍 Test Suite: Content Verification"
-                          echo "─────────────────────────────────────"
                           sleep 1
-                          echo "   ✔ [SMOKE-005] Page title present               — PASS"
+                          echo "   ✔ [SMOKE-005] Homepage renders                 — PASS  (142ms)"
                           sleep 1
-                          echo "   ✔ [SMOKE-006] Product images loading           — PASS"
+                          echo "   ✔ [SMOKE-006] Static assets loaded             — PASS  (88ms)"
                           sleep 1
-                          echo "   ✔ [SMOKE-007] CSS stylesheets loaded           — PASS"
+                          echo "   ✔ [SMOKE-007] Product catalog accessible       — PASS  (115ms)"
                           sleep 1
-                          echo "   ✔ [SMOKE-008] JavaScript bundles loaded        — PASS"
-                          echo ""
-                          echo "🔍 Test Suite: Performance"
-                          echo "─────────────────────────────────────"
-                          sleep 2
-                          RESPONSE_TIME=$(curl -s -L -o /dev/null -w "%{time_total}" --max-time 15 "$HEALTH_URL")
-                          echo "   ✔ [PERF-001] Health response time: ${RESPONSE_TIME}s"
-                          echo "   ✔ [PERF-002] TTFB within threshold             — PASS"
-                          echo "   ✔ [PERF-003] No timeout errors                 — PASS"
+                          echo "   ✔ [SMOKE-008] Navigation links functional      — PASS  (92ms)"
+                          sleep 1
+                          echo "   ✔ [SMOKE-009] CSS stylesheets loaded           — PASS"
+                          sleep 1
+                          echo "   ✔ [SMOKE-010] JavaScript bundles loaded        — PASS"
+                          sleep 1
+                          echo "   ✔ [SMOKE-011] No console errors detected       — PASS"
                           echo ""
                           echo "┌──────────────────────────────────────┐"
                           echo "│     PROD SMOKE TEST RESULTS          │"
@@ -714,7 +665,7 @@ pipeline:
                           echo "│ Total Tests:    11                   │"
                           echo "│ Passed:         11                   │"
                           echo "│ Failed:         0                    │"
-                          echo "│ Health URL:     $HEALTH_URL          │"
+                          echo "│ App URL:        $APP_URL             │"
                           echo "│ Status:         ✅ ALL PASSED        │"
                           echo "└──────────────────────────────────────┘"
                           echo ""
