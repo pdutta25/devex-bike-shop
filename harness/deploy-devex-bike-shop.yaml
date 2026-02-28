@@ -178,7 +178,15 @@ pipeline:
                           echo ""
                           echo "✅ DEV deployment completed — proceeding to smoke tests"
 
-              # ── Step 3: DEV Smoke Tests ──
+              # ── Step 3: Fetch Instances ──
+              - step:
+                  name: Fetch Instances
+                  identifier: fetchInstances_DEV
+                  type: FetchInstanceScript
+                  timeout: 10m
+                  spec: {}
+
+              # ── Step 4: DEV Smoke Tests ──
               - step:
                   name: DEV Smoke Tests
                   identifier: DEV_Smoke_Tests
@@ -337,7 +345,15 @@ pipeline:
                           echo ""
                           echo "✅ SIT deployment completed — proceeding to tests"
 
-              # ── Step 2: SIT Smoke Tests ──
+              # ── Step 2: Fetch Instances ──
+              - step:
+                  name: Fetch Instances
+                  identifier: fetchInstances_SIT
+                  type: FetchInstanceScript
+                  timeout: 10m
+                  spec: {}
+
+              # ── Step 3: SIT Smoke Tests ──
               - step:
                   name: SIT Smoke Tests
                   identifier: SIT_Smoke_Tests
@@ -606,7 +622,15 @@ pipeline:
                           echo ""
                           echo "✅ Deploy triggered — smoke tests will verify app is live"
 
-              # ── Step 3: PROD Smoke Tests (Real) ──
+              # ── Step 3: Fetch Instances ──
+              - step:
+                  name: Fetch Instances
+                  identifier: fetchInstances_PROD
+                  type: FetchInstanceScript
+                  timeout: 10m
+                  spec: {}
+
+              # ── Step 4: PROD Smoke Tests (Real) ──
               - step:
                   name: PROD Smoke Tests
                   identifier: PROD_Smoke_Tests
