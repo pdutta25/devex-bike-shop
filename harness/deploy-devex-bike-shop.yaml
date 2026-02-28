@@ -328,140 +328,7 @@ pipeline:
                       disallowPipelineExecutor: false
                     isAutoRejectEnabled: false
 
-              # ── Step 2: Provision SIT Infrastructure ──
-              - step:
-                  name: Provision SIT Infrastructure
-                  identifier: Provision_SIT_Infrastructure
-                  type: ShellScript
-                  timeout: 5m
-                  spec:
-                    shell: Bash
-                    onDelegate: true
-                    source:
-                      type: Inline
-                      spec:
-                        script: |-
-                          #!/bin/bash
-                          echo "╔══════════════════════════════════════╗"
-                          echo "║  PROVISIONING SIT INFRASTRUCTURE     ║"
-                          echo "║  AWS EC2 via Terraform               ║"
-                          echo "╚══════════════════════════════════════╝"
-                          echo ""
-                          echo "Build:  #<+trigger.payload.buildNumber>"
-                          echo "Region: us-east-1"
-                          echo ""
-                          echo "📋 Terraform Init"
-                          echo "─────────────────────────────────────"
-                          echo "   Initializing provider: aws v5.82.1..."
-                          sleep 2
-                          echo "   Initializing backend: s3://bikeshop-tfstate/sit..."
-                          sleep 2
-                          echo "   ✔ Provider and backend initialized"
-                          echo ""
-                          echo "📋 Terraform Plan"
-                          echo "─────────────────────────────────────"
-                          echo "   Refreshing state..."
-                          sleep 2
-                          echo "   Planning infrastructure changes..."
-                          sleep 3
-                          echo ""
-                          echo "   Resource: aws_instance.sit_bikeshop"
-                          echo "     + ami:             ami-0c02fb55956c7d316 (Amazon Linux 2023)"
-                          echo "     + instance_type:   t3.large"
-                          echo "     + key_name:        bikeshop-sit-key"
-                          echo "     + subnet_id:       subnet-1b2c3d4e5f6g (us-east-1b)"
-                          echo "     + security_groups: [sg-bikeshop-sit-web]"
-                          echo "     + tags:            {Name: bikeshop-sit, Env: sit}"
-                          sleep 2
-                          echo ""
-                          echo "   Resource: aws_security_group.sit_web"
-                          echo "     + ingress:         [80/tcp, 443/tcp, 22/tcp (VPN only)]"
-                          echo "     + egress:          [0.0.0.0/0]"
-                          sleep 1
-                          echo ""
-                          echo "   Resource: aws_eip.sit_bikeshop"
-                          echo "     + allocation_id:   (known after apply)"
-                          sleep 1
-                          echo ""
-                          echo "   Resource: aws_db_instance.sit_postgres"
-                          echo "     + engine:          postgres 15.4"
-                          echo "     + instance_class:  db.t3.medium"
-                          echo "     + storage:         50 GB gp3"
-                          echo "     + multi_az:        false"
-                          sleep 1
-                          echo ""
-                          echo "   Resource: aws_elasticache_cluster.sit_redis"
-                          echo "     + engine:          redis 7.0"
-                          echo "     + node_type:       cache.t3.micro"
-                          sleep 1
-                          echo ""
-                          echo "   Plan: 5 to add, 0 to change, 0 to destroy."
-                          echo ""
-                          echo "📋 Terraform Apply"
-                          echo "─────────────────────────────────────"
-                          echo "   Applying changes..."
-                          sleep 2
-                          echo "   aws_security_group.sit_web:       Creating..."
-                          sleep 2
-                          echo "   aws_security_group.sit_web:       ✔ Created [id: sg-1a2b3c4d5e6f7890]"
-                          sleep 1
-                          echo "   aws_db_instance.sit_postgres:     Creating..."
-                          sleep 3
-                          echo "   aws_db_instance.sit_postgres:     Still creating... (30s elapsed)"
-                          sleep 3
-                          echo "   aws_db_instance.sit_postgres:     ✔ Created [id: bikeshop-sit-db]"
-                          sleep 1
-                          echo "   aws_elasticache_cluster.sit_redis: Creating..."
-                          sleep 3
-                          echo "   aws_elasticache_cluster.sit_redis: ✔ Created [id: bikeshop-sit-cache]"
-                          sleep 1
-                          echo "   aws_instance.sit_bikeshop:        Creating..."
-                          sleep 4
-                          echo "   aws_instance.sit_bikeshop:        Still creating... (15s elapsed)"
-                          sleep 3
-                          echo "   aws_instance.sit_bikeshop:        ✔ Created [id: i-1abc2def3ghi4567]"
-                          sleep 1
-                          echo "   aws_eip.sit_bikeshop:             Creating..."
-                          sleep 2
-                          echo "   aws_eip.sit_bikeshop:             ✔ Created [id: eipalloc-1bcdef23456]"
-                          echo ""
-                          echo "📋 Post-Provisioning Setup"
-                          echo "─────────────────────────────────────"
-                          echo "   Waiting for instance to reach 'running' state..."
-                          sleep 3
-                          echo "   ✔ Instance state: running"
-                          echo "   Waiting for status checks..."
-                          sleep 3
-                          echo "   ✔ System status check: passed"
-                          echo "   ✔ Instance status check: passed"
-                          echo "   Configuring application stack..."
-                          sleep 3
-                          echo "   ✔ Node.js 20 LTS installed"
-                          echo "   ✔ PM2 process manager installed"
-                          echo "   ✔ Nginx reverse proxy configured"
-                          echo "   ✔ CloudWatch agent configured"
-                          echo "   ✔ Database connection verified (RDS PostgreSQL)"
-                          echo "   ✔ Cache connection verified (ElastiCache Redis)"
-                          echo ""
-                          echo "┌──────────────────────────────────────┐"
-                          echo "│   SIT INFRASTRUCTURE SUMMARY         │"
-                          echo "├──────────────────────────────────────┤"
-                          echo "│ EC2 Instance:  i-1abc2def3ghi4567    │"
-                          echo "│ Instance Type: t3.large              │"
-                          echo "│ AMI:           Amazon Linux 2023     │"
-                          echo "│ Public IP:     54.210.156.78         │"
-                          echo "│ Elastic IP:    52.87.203.221         │"
-                          echo "│ AZ:            us-east-1b            │"
-                          echo "│ VPC:           vpc-bikeshop-sit      │"
-                          echo "│ RDS:           bikeshop-sit-db       │"
-                          echo "│ Redis:         bikeshop-sit-cache    │"
-                          echo "│ Status:        ✅ READY              │"
-                          echo "│ Provisioned:   5 resources           │"
-                          echo "└──────────────────────────────────────┘"
-                          echo ""
-                          echo "✅ SIT infrastructure provisioned — environment ready for deployment"
-
-              # ── Step 3: Deploy to SIT ──
+              # ── Step 2: Deploy to SIT ──
               - step:
                   name: Deploy to SIT
                   identifier: Deploy_to_SIT
@@ -504,7 +371,7 @@ pipeline:
                           echo ""
                           echo "✅ SIT deployment completed — proceeding to tests"
 
-              # ── Step 4: SIT Smoke Tests ──
+              # ── Step 3: SIT Smoke Tests ──
               - step:
                   name: SIT Smoke Tests
                   identifier: SIT_Smoke_Tests
@@ -570,7 +437,7 @@ pipeline:
                           echo ""
                           echo "✅ SIT smoke tests passed — proceeding to integration tests"
 
-              # ── Step 5: SIT Integration Tests ──
+              # ── Step 4: SIT Integration Tests ──
               - step:
                   name: SIT Integration Tests
                   identifier: SIT_Integration_Tests
@@ -654,7 +521,7 @@ pipeline:
                           echo ""
                           echo "✅ SIT integration tests passed — build validated"
 
-              # ── Step 6: Certify SIT Build (Manual) ──
+              # ── Step 5: Certify SIT Build (Manual) ──
               - step:
                   name: Certify SIT Build
                   identifier: Certify_SIT_Build
@@ -719,185 +586,7 @@ pipeline:
                       disallowPipelineExecutor: false
                     isAutoRejectEnabled: false
 
-              # ── Step 2: Provision PROD Infrastructure ──
-              - step:
-                  name: Provision PROD Infrastructure
-                  identifier: Provision_PROD_Infrastructure
-                  type: ShellScript
-                  timeout: 5m
-                  spec:
-                    shell: Bash
-                    onDelegate: true
-                    source:
-                      type: Inline
-                      spec:
-                        script: |-
-                          #!/bin/bash
-                          echo "╔══════════════════════════════════════╗"
-                          echo "║  PROVISIONING PROD INFRASTRUCTURE    ║"
-                          echo "║  AWS EC2 via Terraform               ║"
-                          echo "╚══════════════════════════════════════╝"
-                          echo ""
-                          echo "Build:  #<+trigger.payload.buildNumber>"
-                          echo "Region: us-east-1 (primary), us-west-2 (failover)"
-                          echo ""
-                          echo "📋 Terraform Init"
-                          echo "─────────────────────────────────────"
-                          echo "   Initializing provider: aws v5.82.1..."
-                          sleep 2
-                          echo "   Initializing backend: s3://bikeshop-tfstate/prod..."
-                          sleep 2
-                          echo "   ✔ Provider and backend initialized"
-                          echo ""
-                          echo "📋 Terraform Plan"
-                          echo "─────────────────────────────────────"
-                          echo "   Refreshing state..."
-                          sleep 2
-                          echo "   Planning infrastructure changes..."
-                          sleep 3
-                          echo ""
-                          echo "   Resource: aws_launch_template.prod_bikeshop"
-                          echo "     + ami:             ami-0c02fb55956c7d316 (Amazon Linux 2023)"
-                          echo "     + instance_type:   t3.xlarge"
-                          echo "     + key_name:        bikeshop-prod-key"
-                          echo "     + security_groups: [sg-bikeshop-prod-web]"
-                          sleep 1
-                          echo ""
-                          echo "   Resource: aws_autoscaling_group.prod_bikeshop"
-                          echo "     + min_size:        2"
-                          echo "     + max_size:        6"
-                          echo "     + desired_capacity: 2"
-                          echo "     + health_check:    ELB"
-                          echo "     + subnets:         [us-east-1a, us-east-1b, us-east-1c]"
-                          sleep 1
-                          echo ""
-                          echo "   Resource: aws_lb.prod_bikeshop_alb"
-                          echo "     + type:            application"
-                          echo "     + scheme:          internet-facing"
-                          echo "     + listeners:       [443/HTTPS → target group]"
-                          echo "     + ssl_certificate: arn:aws:acm:...bikeshop.com"
-                          sleep 1
-                          echo ""
-                          echo "   Resource: aws_lb_target_group.prod_bikeshop"
-                          echo "     + port:            3000"
-                          echo "     + protocol:        HTTP"
-                          echo "     + health_check:    /health (interval: 30s)"
-                          sleep 1
-                          echo ""
-                          echo "   Resource: aws_security_group.prod_web"
-                          echo "     + ingress:         [443/tcp (public), 80→443 redirect]"
-                          echo "     + egress:          [0.0.0.0/0]"
-                          sleep 1
-                          echo ""
-                          echo "   Resource: aws_db_instance.prod_postgres"
-                          echo "     + engine:          postgres 15.4"
-                          echo "     + instance_class:  db.r6g.large"
-                          echo "     + storage:         200 GB gp3 (encrypted)"
-                          echo "     + multi_az:        true"
-                          echo "     + backup_retention: 7 days"
-                          sleep 1
-                          echo ""
-                          echo "   Resource: aws_elasticache_replication_group.prod_redis"
-                          echo "     + engine:          redis 7.0"
-                          echo "     + node_type:       cache.r6g.large"
-                          echo "     + num_cache_clusters: 2 (primary + replica)"
-                          echo "     + automatic_failover: enabled"
-                          sleep 1
-                          echo ""
-                          echo "   Resource: aws_cloudwatch_metric_alarm.prod_cpu"
-                          echo "     + metric:          CPUUtilization > 70%"
-                          echo "     + action:          SNS → ops-team@bikeshop.com"
-                          sleep 1
-                          echo ""
-                          echo "   Plan: 8 to add, 0 to change, 0 to destroy."
-                          echo ""
-                          echo "📋 Terraform Apply"
-                          echo "─────────────────────────────────────"
-                          echo "   ⚠️  Applying to PRODUCTION — changes are live"
-                          echo "   Applying changes..."
-                          sleep 2
-                          echo "   aws_security_group.prod_web:          Creating..."
-                          sleep 2
-                          echo "   aws_security_group.prod_web:          ✔ Created [id: sg-9a8b7c6d5e4f3210]"
-                          sleep 1
-                          echo "   aws_db_instance.prod_postgres:        Creating..."
-                          sleep 3
-                          echo "   aws_db_instance.prod_postgres:        Still creating... (45s elapsed)"
-                          sleep 4
-                          echo "   aws_db_instance.prod_postgres:        ✔ Created [id: bikeshop-prod-db]"
-                          sleep 1
-                          echo "   aws_elasticache_replication_group:    Creating..."
-                          sleep 3
-                          echo "   aws_elasticache_replication_group:    Still creating... (30s elapsed)"
-                          sleep 3
-                          echo "   aws_elasticache_replication_group:    ✔ Created [id: bikeshop-prod-cache]"
-                          sleep 1
-                          echo "   aws_lb.prod_bikeshop_alb:             Creating..."
-                          sleep 3
-                          echo "   aws_lb.prod_bikeshop_alb:             ✔ Created [id: arn:aws:elasticloadbalancing:...]"
-                          sleep 1
-                          echo "   aws_lb_target_group.prod_bikeshop:    Creating..."
-                          sleep 2
-                          echo "   aws_lb_target_group.prod_bikeshop:    ✔ Created"
-                          sleep 1
-                          echo "   aws_launch_template.prod_bikeshop:    Creating..."
-                          sleep 2
-                          echo "   aws_launch_template.prod_bikeshop:    ✔ Created [id: lt-0prod1234abcd]"
-                          sleep 1
-                          echo "   aws_autoscaling_group.prod_bikeshop:  Creating..."
-                          sleep 4
-                          echo "   aws_autoscaling_group.prod_bikeshop:  Still creating... (20s elapsed)"
-                          sleep 3
-                          echo "   aws_autoscaling_group.prod_bikeshop:  ✔ Created [2 instances launching]"
-                          sleep 1
-                          echo "   aws_cloudwatch_metric_alarm.prod_cpu: Creating..."
-                          sleep 2
-                          echo "   aws_cloudwatch_metric_alarm.prod_cpu: ✔ Created"
-                          echo ""
-                          echo "📋 Post-Provisioning Validation"
-                          echo "─────────────────────────────────────"
-                          echo "   Waiting for ASG instances to reach 'InService'..."
-                          sleep 4
-                          echo "   ✔ Instance i-prod01abc: InService (us-east-1a)"
-                          echo "   ✔ Instance i-prod02def: InService (us-east-1b)"
-                          echo "   Waiting for ALB target group health checks..."
-                          sleep 3
-                          echo "   ✔ Target i-prod01abc: healthy"
-                          echo "   ✔ Target i-prod02def: healthy"
-                          echo "   Verifying database connectivity..."
-                          sleep 2
-                          echo "   ✔ RDS primary: connected (us-east-1a)"
-                          echo "   ✔ RDS standby: synced (us-east-1b)"
-                          echo "   Verifying cache cluster..."
-                          sleep 2
-                          echo "   ✔ Redis primary: connected"
-                          echo "   ✔ Redis replica: synced"
-                          echo "   Verifying CloudWatch alarms..."
-                          sleep 1
-                          echo "   ✔ CPU alarm: configured (threshold: 70%)"
-                          echo "   ✔ SNS notifications: active"
-                          echo ""
-                          echo "┌──────────────────────────────────────┐"
-                          echo "│   PROD INFRASTRUCTURE SUMMARY        │"
-                          echo "├──────────────────────────────────────┤"
-                          echo "│ EC2 Instances: 2x t3.xlarge (ASG)   │"
-                          echo "│ AMI:           Amazon Linux 2023     │"
-                          echo "│ ALB:           bikeshop-prod-alb     │"
-                          echo "│ ALB DNS:       bikeshop-prod-alb.    │"
-                          echo "│                us-east-1.elb.aws.com │"
-                          echo "│ AZs:           us-east-1a, 1b, 1c   │"
-                          echo "│ RDS:           bikeshop-prod-db      │"
-                          echo "│                (Multi-AZ, encrypted) │"
-                          echo "│ Redis:         bikeshop-prod-cache   │"
-                          echo "│                (2-node, failover)    │"
-                          echo "│ Monitoring:    CloudWatch + SNS      │"
-                          echo "│ Status:        ✅ READY              │"
-                          echo "│ Provisioned:   8 resources           │"
-                          echo "└──────────────────────────────────────┘"
-                          echo ""
-                          echo "✅ PROD infrastructure provisioned — production environment ready"
-
-              # ── Step 3: Deploy to PROD (Real — Render) ──
+              # ── Step 2: Deploy to PROD - Render ──
               - step:
                   name: Deploy to PROD - Render
                   identifier: Deploy_to_PROD_Render
@@ -944,7 +633,7 @@ pipeline:
                           echo ""
                           echo "✅ Deploy triggered — smoke tests will verify app is live"
 
-              # ── Step 4: PROD Smoke Tests (Real) ──
+              # ── Step 3: PROD Smoke Tests (Real) ──
               - step:
                   name: PROD Smoke Tests
                   identifier: PROD_Smoke_Tests
@@ -1031,7 +720,7 @@ pipeline:
                           echo ""
                           echo "✅ PROD smoke tests passed — production is healthy"
 
-              # ── Step 5: Certify PROD Build — Final Sign-Off (Manual) ──
+              # ── Step 4: Certify PROD Build - Final Sign-Off (Manual) ──
               - step:
                   name: Certify PROD Build - Final Sign-Off
                   identifier: Certify_PROD_Build_Final_SignOff
