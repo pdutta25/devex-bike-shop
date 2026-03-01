@@ -7,21 +7,26 @@ on:
     branches: [main]
   workflow_dispatch:
 
-jobs:
-  ci:
-    name: Build, Test & Scan
-    runs-on: ubuntu-latest
+# ═══════════════════════════════════════════════════════════
+# PIPELINE GRAPH (visible in GitHub Actions UI):
+#
+#   build ──┐
+#   lint  ──┤──→ security-scan ──┐
+#   test  ──┤──→ code-quality  ──┤──→ deploy-gate
+#           └────────────────────┘
+# ═══════════════════════════════════════════════════════════
 
+jobs:
+  # ─────────────────────────────────────────────
+  # STAGE 1a: BUILD (runs in parallel with lint & test)
+  # ─────────────────────────────────────────────
+  build:
+    name: 🔨 Build
+    runs-on: ubuntu-latest
     steps:
-      # ──────────────────────────────────────────
-      # 1. CHECKOUT
-      # ──────────────────────────────────────────
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # ──────────────────────────────────────────
-      # 2. SETUP
-      # ──────────────────────────────────────────
       - name: Set up Node.js
         uses: actions/setup-node@v6
         with:
@@ -31,9 +36,33 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      # ──────────────────────────────────────────
-      # 3. LINTING (real)
-      # ──────────────────────────────────────────
+      - name: Build Application
+        run: |
+          echo "╔══════════════════════════════════════╗"
+          echo "║       BUILD                          ║"
+          echo "╚══════════════════════════════════════╝"
+          npm run build
+          echo "✅ Build completed successfully"
+
+  # ─────────────────────────────────────────────
+  # STAGE 1b: LINT (runs in parallel with build & test)
+  # ─────────────────────────────────────────────
+  lint:
+    name: 📋 Lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
       - name: Run ESLint
         run: |
           echo "╔══════════════════════════════════════╗"
@@ -42,9 +71,25 @@ jobs:
           npx eslint . --ext .js,.jsx,.ts,.tsx --no-error-on-unmatched-pattern || echo "⚠️  Lint warnings found (non-blocking for demo)"
           echo "✅ Linting step completed"
 
-      # ──────────────────────────────────────────
-      # 4. UNIT TESTING (real, with fallback STB)
-      # ──────────────────────────────────────────
+  # ─────────────────────────────────────────────
+  # STAGE 1c: TEST (runs in parallel with build & lint)
+  # ─────────────────────────────────────────────
+  test:
+    name: 🧪 Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
       - name: Run Unit Tests
         run: |
           echo "╔══════════════════════════════════════╗"
@@ -68,52 +113,18 @@ jobs:
             echo "✅ Unit tests completed (STB)"
           fi
 
-      # ──────────────────────────────────────────
-      # 5. BUILD
-      # ──────────────────────────────────────────
-      - name: Build Application
-        run: |
-          echo "╔══════════════════════════════════════╗"
-          echo "║       BUILD                          ║"
-          echo "╚══════════════════════════════════════╝"
-          npm run build
-          echo "✅ Build completed successfully"
+  # ─────────────────────────────────────────────
+  # STAGE 2a: SECURITY SCAN (after build passes)
+  # ─────────────────────────────────────────────
+  security-scan:
+    name: 🛡️ Security Scan
+    needs: [build]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-      # ──────────────────────────────────────────
-      # 6. CODE SCANNING (STB)
-      # ──────────────────────────────────────────
-      - name: Code Quality Scan (SonarQube — STB)
-        run: |
-          echo "╔══════════════════════════════════════╗"
-          echo "║    CODE QUALITY SCAN — SonarQube     ║"
-          echo "╚══════════════════════════════════════╝"
-          echo "🔍 Initializing SonarQube scanner..."
-          sleep 3
-          echo "🔍 Scanning source files..."
-          sleep 5
-          echo "🔍 Analyzing code quality metrics..."
-          sleep 3
-          echo ""
-          echo "┌──────────────────────────────────────┐"
-          echo "│        SONARQUBE SCAN RESULTS        │"
-          echo "├──────────────────────────────────────┤"
-          echo "│ Quality Gate:      ✅ PASSED          │"
-          echo "│ Bugs:              0                  │"
-          echo "│ Vulnerabilities:   0                  │"
-          echo "│ Code Smells:       3 (minor)          │"
-          echo "│ Coverage:          78.4%              │"
-          echo "│ Duplications:      1.2%               │"
-          echo "│ Reliability:       A                  │"
-          echo "│ Security:          A                  │"
-          echo "│ Maintainability:   A                  │"
-          echo "└──────────────────────────────────────┘"
-          echo ""
-          echo "✅ Code quality scan passed"
-
-      # ──────────────────────────────────────────
-      # 7. SECURITY SCANNING — SAST (STB)
-      # ──────────────────────────────────────────
-      - name: Security Scan — SAST (STB)
+      - name: SAST Scan (Snyk/Semgrep — STB)
         run: |
           echo "╔══════════════════════════════════════╗"
           echo "║  SECURITY SCAN — SAST (Snyk/Semgrep)║"
@@ -142,12 +153,9 @@ jobs:
           echo "│ OVERALL:      ✅ PASS                │"
           echo "└──────────────────────────────────────┘"
           echo ""
-          echo "✅ Security scan passed — no blocking issues"
+          echo "✅ SAST scan passed — no blocking issues"
 
-      # ──────────────────────────────────────────
-      # 8. SECURITY SCANNING — Dependency (STB)
-      # ──────────────────────────────────────────
-      - name: Dependency Vulnerability Check (STB)
+      - name: Dependency Vulnerability Check (OWASP — STB)
         run: |
           echo "╔══════════════════════════════════════╗"
           echo "║  DEPENDENCY VULNERABILITY CHECK      ║"
@@ -178,21 +186,64 @@ jobs:
           echo ""
           echo "✅ Dependency check completed"
 
-      # ──────────────────────────────────────────
-      # 9. CI SUMMARY
-      # ──────────────────────────────────────────
+  # ─────────────────────────────────────────────
+  # STAGE 2b: CODE QUALITY (after build passes)
+  # ─────────────────────────────────────────────
+  code-quality:
+    name: 📊 Code Quality
+    needs: [build]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Code Quality Scan (SonarQube — STB)
+        run: |
+          echo "╔══════════════════════════════════════╗"
+          echo "║    CODE QUALITY SCAN — SonarQube     ║"
+          echo "╚══════════════════════════════════════╝"
+          echo "🔍 Initializing SonarQube scanner..."
+          sleep 3
+          echo "🔍 Scanning source files..."
+          sleep 5
+          echo "🔍 Analyzing code quality metrics..."
+          sleep 3
+          echo ""
+          echo "┌──────────────────────────────────────┐"
+          echo "│        SONARQUBE SCAN RESULTS        │"
+          echo "├──────────────────────────────────────┤"
+          echo "│ Quality Gate:      ✅ PASSED          │"
+          echo "│ Bugs:              0                  │"
+          echo "│ Vulnerabilities:   0                  │"
+          echo "│ Code Smells:       3 (minor)          │"
+          echo "│ Coverage:          78.4%              │"
+          echo "│ Duplications:      1.2%               │"
+          echo "│ Reliability:       A                  │"
+          echo "│ Security:          A                  │"
+          echo "│ Maintainability:   A                  │"
+          echo "└──────────────────────────────────────┘"
+          echo ""
+          echo "✅ Code quality scan passed"
+
+  # ─────────────────────────────────────────────
+  # STAGE 3: DEPLOY GATE (all checks must pass)
+  # ─────────────────────────────────────────────
+  deploy-gate:
+    name: 🚀 Deploy Gate
+    needs: [build, lint, test, security-scan, code-quality]
+    runs-on: ubuntu-latest
+    steps:
       - name: CI Summary
         run: |
           echo ""
           echo "╔══════════════════════════════════════╗"
           echo "║         CI PIPELINE SUMMARY          ║"
           echo "╠══════════════════════════════════════╣"
+          echo "║ ✅ Build            — Passed         ║"
           echo "║ ✅ Linting          — Passed         ║"
           echo "║ ✅ Unit Tests       — Passed         ║"
-          echo "║ ✅ Build            — Passed         ║"
+          echo "║ ✅ Security Scan    — Passed         ║"
           echo "║ ✅ Code Quality     — Passed         ║"
-          echo "║ ✅ SAST Scan        — Passed         ║"
-          echo "║ ✅ Dependency Audit — Passed         ║"
           echo "╠══════════════════════════════════════╣"
           echo "║ Commit: ${{ github.sha }}            ║"
           echo "║ Branch: ${{ github.ref_name }}       ║"
@@ -201,9 +252,6 @@ jobs:
           echo "║ 🚀 Ready for deployment via Harness  ║"
           echo "╚══════════════════════════════════════╝"
 
-      # ──────────────────────────────────────────
-      # 10. TRIGGER HARNESS
-      # ──────────────────────────────────────────
       - name: Trigger Harness CD Pipeline
         if: github.ref == 'refs/heads/main' && github.event_name == 'push'
         run: |

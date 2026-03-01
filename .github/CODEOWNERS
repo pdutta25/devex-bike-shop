@@ -1,0 +1,24 @@
+# ═══════════════════════════════════════════════════
+# CODEOWNERS — Auto-assign reviewers by file path
+# ═══════════════════════════════════════════════════
+# The RIGHT person reviews the RIGHT files — automatically.
+
+# Default owner for everything
+*                             @pdutta25
+
+# Frontend / UI components
+src/components/**             @pdutta25
+src/app/(storefront)/**       @pdutta25
+
+# Backend / API routes
+src/app/api/**                @pdutta25
+src/lib/db/**                 @pdutta25
+src/lib/queries/**            @pdutta25
+
+# Infrastructure & CI/CD
+.github/**                    @pdutta25
+harness/**                    @pdutta25
+
+# Security-sensitive files
+src/lib/auth.ts               @pdutta25
+.env.example                  @pdutta25
