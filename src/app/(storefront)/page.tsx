@@ -13,7 +13,7 @@ export default async function HomePage() {
   return (
     <div className="bg-[#0f0f1a]">
       {/* ─── HERO ─── */}
-      <section className="relative overflow-hidden bg-brand-dark min-h-[85vh] flex items-center">
+      <section className="relative overflow-hidden bg-brand-dark min-h-[70vh] flex items-center">
         {/* Animated mesh background */}
         <div className="absolute inset-0 bg-mesh-gradient bg-[length:400%_400%] animate-gradient-shift" />
 
@@ -47,7 +47,7 @@ export default async function HomePage() {
         </div>
 
         {/* Content */}
-        <div className="relative z-10 w-full px-6 sm:px-10 lg:px-16 xl:px-24 py-32">
+        <div className="relative z-10 w-full px-6 sm:px-10 lg:px-16 xl:px-24 py-20">
           <div className="max-w-3xl">
             {/* Badge */}
             <div className="inline-flex items-center gap-2 bg-white/5 border border-white/10 rounded-full px-4 py-1.5 mb-8 animate-fade-in-up">
