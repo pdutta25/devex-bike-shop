@@ -49,18 +49,15 @@ export default async function HomePage() {
         {/* Content */}
         <div className="relative z-10 w-full px-6 sm:px-10 lg:px-16 xl:px-24 py-20">
           <div className="max-w-3xl">
-            {/* Badge */}
-            <div className="inline-flex items-center gap-2 bg-white/5 border border-white/10 rounded-full px-4 py-1.5 mb-8 animate-fade-in-up">
-              <span className="w-2 h-2 rounded-full bg-brand-accent animate-pulse" />
-              <span className="text-xs font-medium text-gray-400 uppercase tracking-wider">
-                New 2026 Collection Available
-              </span>
-            </div>
-
             {/* Headline */}
             <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold tracking-tight leading-[1.1] mb-6 animate-fade-in-up animate-delay-100 text-left">
               <span className="text-white">Ride the </span>
               <span className="gradient-text">Future</span>
+              <div className="inline-flex items-center gap-2 bg-brand-accent/10 border border-brand-accent/30 rounded-full px-3 py-1 ml-4 mt-4">
+              <span className="text-sm font-semibold text-brand-accent">
+                Built with DevEx
+              </span>
+              </div>
             </h1>
 
             {/* Subhead */}
