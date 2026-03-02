@@ -65,8 +65,8 @@ export default async function HomePage() {
 
             {/* Subhead */}
             <p className="text-lg sm:text-xl text-gray-400 leading-relaxed mb-10 max-w-xl animate-fade-in-up animate-delay-200">
-              Premium bikes built for every journey. From mountain trails to
-              city streets, ride the future with DevEx.
+              Discover our curated collection of premium bikes — engineered for
+              performance, designed for the roads, trails, and streets you love.
             </p>
 
             {/* CTAs */}
