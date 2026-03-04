@@ -1,5 +1,6 @@
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
+import { randomBytes } from "crypto";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -12,10 +13,12 @@ export function formatPrice(cents: number): string {
   }).format(cents / 100);
 }
 
+// SECURITY (V-18): Use cryptographically secure random bytes for order numbers.
+// 8 hex chars = 4 billion possible values per day — infeasible to enumerate.
 export function generateOrderNumber(): string {
   const now = new Date();
   const date = now.toISOString().slice(0, 10).replace(/-/g, "");
-  const rand = Math.floor(Math.random() * 900 + 100);
+  const rand = randomBytes(4).toString("hex").toUpperCase();
   return `SSB-${date}-${rand}`;
 }
 
