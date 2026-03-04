@@ -3,6 +3,15 @@ import { db } from "@/lib/db";
 import { cartItems } from "@/lib/db/schema";
 import { getCart, getCartItem } from "@/lib/queries/cart-queries";
 import { eq, and, sql } from "drizzle-orm";
+import { z } from "zod";
+
+// SECURITY (V-14): Validate all cart inputs
+const addToCartSchema = z.object({
+  productId: z.number().int().positive(),
+  quantity: z.number().int().min(1).max(99).default(1),
+  selectedSize: z.string().max(10).optional(),
+  selectedColor: z.string().max(50).optional(),
+});
 
 export async function GET(request: NextRequest) {
   const sessionId = request.cookies.get("cart_session")?.value;
@@ -16,13 +25,20 @@ export async function POST(request: NextRequest) {
   const sessionId = request.cookies.get("cart_session")?.value;
   if (!sessionId) return NextResponse.json({ error: "No session" }, { status: 400 });
 
-  const { productId, quantity = 1, selectedSize, selectedColor } = await request.json();
+  const body = await request.json();
+  const parsed = addToCartSchema.safeParse(body);
+  if (!parsed.success) {
+    return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
+  }
+
+  const { productId, quantity, selectedSize, selectedColor } = parsed.data;
 
   const existing = await getCartItem(sessionId, productId, selectedSize, selectedColor);
 
   if (existing) {
+    const newQty = Math.min(existing.quantity + quantity, 99);
     db.update(cartItems)
-      .set({ quantity: existing.quantity + quantity, updatedAt: new Date().toISOString() })
+      .set({ quantity: newQty, updatedAt: new Date().toISOString() })
       .where(eq(cartItems.id, existing.id))
       .run();
   } else {
