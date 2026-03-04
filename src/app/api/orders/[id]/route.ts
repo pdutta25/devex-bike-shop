@@ -18,7 +18,8 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   if (!order) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   // SECURITY (V-07): Verify the requester owns this order or is admin
-  if (!isOwnerOrAdmin(request, order.customerId)) {
+  // getOrderById returns { order: <row>, customerFirstName, ... } spread with items
+  if (!isOwnerOrAdmin(request, order.order.customerId)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 

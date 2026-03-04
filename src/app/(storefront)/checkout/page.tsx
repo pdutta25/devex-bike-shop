@@ -34,10 +34,10 @@ export default function CheckoutPage() {
   const [state, setState] = useState(customer?.state ?? "");
   const [zip, setZip] = useState(customer?.zipCode ?? "");
 
-  // Payment
-  const [cardNumber, setCardNumber] = useState("4242424242424242");
-  const [expiry, setExpiry] = useState("12/28");
-  const [cvv, setCvv] = useState("123");
+  // Payment — SECURITY (V-20): No hardcoded test card data; use placeholders instead
+  const [cardNumber, setCardNumber] = useState("");
+  const [expiry, setExpiry] = useState("");
+  const [cvv, setCvv] = useState("");
   const [cardholderName, setCardholderName] = useState("");
 
   if (cartLoading) {
