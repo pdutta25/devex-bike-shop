@@ -39,3 +39,6 @@ next-env.d.ts
 /data/*.db-journal
 /data/*.db-wal
 /data/*.db-shm
+
+# slides (keep locally, not in repo)
+slides/
