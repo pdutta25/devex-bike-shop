@@ -308,8 +308,10 @@ jobs:
             mkdir wiki-repo && cd wiki-repo && git init && git remote add origin "$WIKI_URL"
           }
 
+          # Copy repo README as wiki home page
+          cp README.md         wiki-repo/Home.md
+
           # Copy generated docs to wiki with wiki-friendly names
-          cp docs/README.md    wiki-repo/Home.md
           cp docs/API.md       wiki-repo/API-Reference.md
           cp docs/SCHEMA.md    wiki-repo/Database-Schema.md
           cp docs/ARCHITECTURE.md wiki-repo/Architecture.md
