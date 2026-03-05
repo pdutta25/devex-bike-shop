@@ -1,4 +1,4 @@
-name: CI Pipeline - Build, Test, Scan
+name: CI
 
 on:
   push:
@@ -229,7 +229,7 @@ jobs:
   # STAGE 3: DEPLOY GATE (all checks must pass)
   # ─────────────────────────────────────────────
   deploy-gate:
-    name: 🚀 Deploy Gate
+    name: 🚀 Trigger Harness
     needs: [build, lint, test, security-scan, code-quality]
     runs-on: ubuntu-latest
     steps:
@@ -295,12 +295,12 @@ jobs:
           echo "╚══════════════════════════════════════╝"
           node scripts/generate-docs.mjs
 
-      - name: Generate AI docs (Architecture, UX)
+      - name: Generate AI docs (UX)
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           echo "╔══════════════════════════════════════╗"
-          echo "║    GENERATING AI-POWERED DOCS        ║"
+          echo "║    GENERATING AI-POWERED UX DOCS     ║"
           echo "║    (GitHub Copilot / Models API)     ║"
           echo "╚══════════════════════════════════════╝"
           node scripts/generate-ai-docs.mjs
