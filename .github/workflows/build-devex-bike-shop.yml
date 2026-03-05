@@ -266,3 +266,60 @@ jobs:
             }'
           echo ""
           echo "✅ Harness pipeline triggered successfully"
+
+  # ─────────────────────────────────────────
+  # STAGE 4: GENERATE DOCS → GITHUB WIKI
+  # ─────────────────────────────────────────
+  generate-docs:
+    name: 📚 Generate Docs
+    needs: [build]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Generate documentation
+        run: |
+          echo "╔══════════════════════════════════════╗"
+          echo "║    GENERATING PROJECT DOCS           ║"
+          echo "╚══════════════════════════════════════╝"
+          node scripts/generate-docs.mjs
+
+      - name: Publish to GitHub Wiki
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "📚 Publishing docs to GitHub Wiki..."
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+          WIKI_URL="https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }}.wiki.git"
+          git clone "$WIKI_URL" wiki-repo 2>/dev/null || {
+            echo "⚠️  Wiki not initialized — creating first page"
+            mkdir wiki-repo && cd wiki-repo && git init && git remote add origin "$WIKI_URL"
+          }
+
+          # Copy generated docs to wiki with wiki-friendly names
+          cp docs/README.md    wiki-repo/Home.md
+          cp docs/API.md       wiki-repo/API-Reference.md
+          cp docs/SCHEMA.md    wiki-repo/Database-Schema.md
+          cp docs/ARCHITECTURE.md wiki-repo/Architecture.md
+
+          cd wiki-repo
+          git add -A
+          if git diff --staged --quiet; then
+            echo "ℹ️  No doc changes to publish"
+          else
+            git commit -m "docs: auto-update from ${GITHUB_SHA::7}"
+            git push origin HEAD
+            echo "✅ Wiki updated successfully"
+          fi

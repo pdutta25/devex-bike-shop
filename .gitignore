@@ -42,3 +42,6 @@ next-env.d.ts
 
 # slides (keep locally, not in repo)
 slides/
+
+# generated docs (published to GitHub Wiki via CI)
+docs/
