@@ -287,12 +287,22 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Generate documentation
+      - name: Generate static docs (API, Schema)
         run: |
           echo "╔══════════════════════════════════════╗"
-          echo "║    GENERATING PROJECT DOCS           ║"
+          echo "║    GENERATING STATIC DOCS            ║"
           echo "╚══════════════════════════════════════╝"
           node scripts/generate-docs.mjs
+
+      - name: Generate AI docs (Architecture, UX)
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "╔══════════════════════════════════════╗"
+          echo "║    GENERATING AI-POWERED DOCS        ║"
+          echo "║    (GitHub Copilot / Models API)     ║"
+          echo "╚══════════════════════════════════════╝"
+          node scripts/generate-ai-docs.mjs
 
       - name: Publish to GitHub Wiki
         env:
@@ -309,12 +319,15 @@ jobs:
           }
 
           # Copy repo README as wiki home page
-          cp README.md         wiki-repo/Home.md
+          cp README.md                wiki-repo/Home.md
 
-          # Copy generated docs to wiki with wiki-friendly names
-          cp docs/API.md       wiki-repo/API-Reference.md
-          cp docs/SCHEMA.md    wiki-repo/Database-Schema.md
-          cp docs/ARCHITECTURE.md wiki-repo/Architecture.md
+          # Static docs (code-scanned)
+          cp docs/API.md              wiki-repo/API-Reference.md
+          cp docs/SCHEMA.md           wiki-repo/Database-Schema.md
+
+          # AI-generated docs (GitHub Copilot)
+          cp docs/ARCHITECTURE.md     wiki-repo/Architecture.md
+          cp docs/USER-EXPERIENCE.md  wiki-repo/User-Experience.md
 
           cd wiki-repo
           git add -A
