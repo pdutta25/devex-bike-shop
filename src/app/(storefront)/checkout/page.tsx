@@ -34,11 +34,7 @@ export default function CheckoutPage() {
   const [state, setState] = useState(customer?.state ?? "");
   const [zip, setZip] = useState(customer?.zipCode ?? "");
 
-  // Payment — SECURITY (V-20): No hardcoded test card data; use placeholders instead
-  const [cardNumber, setCardNumber] = useState("");
-  const [expiry, setExpiry] = useState("");
-  const [cvv, setCvv] = useState("");
-  const [cardholderName, setCardholderName] = useState("");
+  // Demo shop — no real payment processing
 
   if (cartLoading) {
     return (
@@ -87,21 +83,12 @@ export default function CheckoutPage() {
           firstName,
           lastName,
           fulfillmentType: fulfillment,
-          shippingAddress:
-            fulfillment === "delivery"
-              ? {
-                  addressLine1: address,
-                  city,
-                  state,
-                  zip,
-                }
-              : null,
-          payment: {
-            cardNumber,
-            expiry,
-            cvv,
-            cardholderName,
-          },
+          ...(fulfillment === "delivery" && {
+            addressLine1: address,
+            city,
+            state,
+            zipCode: zip,
+          }),
         }),
       });
 
@@ -255,45 +242,17 @@ export default function CheckoutPage() {
               </section>
             )}
 
-            {/* Payment Information */}
-            <section className="bg-white/5 rounded-xl border border-white/10 p-6">
-              <h2 className="text-lg font-bold text-white mb-4">
-                Payment Information
-              </h2>
-              <div className="space-y-4">
-                <Input
-                  id="cardNumber"
-                  label="Card Number"
-                  required
-                  value={cardNumber}
-                  onChange={(e) => setCardNumber(e.target.value)}
-                  placeholder="4242 4242 4242 4242"
-                />
-                <div className="grid grid-cols-3 gap-4">
-                  <Input
-                    id="expiry"
-                    label="Expiry"
-                    required
-                    value={expiry}
-                    onChange={(e) => setExpiry(e.target.value)}
-                    placeholder="MM/YY"
-                  />
-                  <Input
-                    id="cvv"
-                    label="CVV"
-                    required
-                    value={cvv}
-                    onChange={(e) => setCvv(e.target.value)}
-                    placeholder="123"
-                  />
-                  <Input
-                    id="cardholderName"
-                    label="Cardholder Name"
-                    required
-                    value={cardholderName}
-                    onChange={(e) => setCardholderName(e.target.value)}
-                    placeholder="John Doe"
-                  />
+            {/* Payment — Demo Notice */}
+            <section className="bg-emerald-500/10 rounded-xl border border-emerald-500/20 p-6">
+              <div className="flex items-center gap-3">
+                <span className="text-2xl">✅</span>
+                <div>
+                  <h2 className="text-lg font-bold text-white">
+                    Payment Auto-Accepted
+                  </h2>
+                  <p className="text-sm text-gray-400">
+                    This is a demo store — no real payment is processed. Your order will be accepted automatically.
+                  </p>
                 </div>
               </div>
             </section>
