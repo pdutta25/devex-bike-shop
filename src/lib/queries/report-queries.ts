@@ -1,8 +1,9 @@
-import { db } from "@/lib/db";
+import { db, dbReady } from "@/lib/db";
 import { orders, orderItems, products, categories, customers } from "@/lib/db/schema";
 import { sql, eq, and, gte, lte, desc, ne } from "drizzle-orm";
 
 export async function getRevenueOverTime(period: "daily" | "weekly" | "monthly" = "daily", startDate?: string, endDate?: string) {
+  await dbReady;
   const groupBy = period === "daily"
     ? sql`date(${orders.createdAt})`
     : period === "weekly"
@@ -26,6 +27,7 @@ export async function getRevenueOverTime(period: "daily" | "weekly" | "monthly" 
 }
 
 export async function getTopProducts(limit = 10) {
+  await dbReady;
   return db
     .select({
       productId: orderItems.productId,
@@ -42,6 +44,7 @@ export async function getTopProducts(limit = 10) {
 }
 
 export async function getOrdersByStatus() {
+  await dbReady;
   return db
     .select({
       status: orders.status,
@@ -52,6 +55,7 @@ export async function getOrdersByStatus() {
 }
 
 export async function getCategoryPerformance() {
+  await dbReady;
   return db
     .select({
       categoryId: products.categoryId,
@@ -70,6 +74,7 @@ export async function getCategoryPerformance() {
 }
 
 export async function getDashboardStats() {
+  await dbReady;
   const [revenueResult, orderCountResult, productCountResult, customerCountResult] = await Promise.all([
     db
       .select({ total: sql<number>`sum(${orders.total})` })
@@ -97,6 +102,7 @@ export async function getDashboardStats() {
 }
 
 export async function getRecentOrders(limit = 5) {
+  await dbReady;
   return db
     .select({
       order: orders,

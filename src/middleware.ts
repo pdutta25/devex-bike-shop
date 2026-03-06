@@ -1,34 +1,48 @@
 import { NextRequest, NextResponse } from "next/server";
+import { validateToken, ADMIN_COOKIE_NAME } from "@/lib/admin-session";
 
 /**
- * SECURITY (V-11): CSRF protection middleware.
- *
- * Validates the Origin header on all state-changing requests (POST, PUT, DELETE, PATCH)
- * to ensure they originate from the same site. Blocks cross-origin mutation attempts.
+ * Middleware handles two concerns:
+ * 1. Admin authentication — protect /admin routes with session cookie
+ * 2. CSRF protection (V-11) — validate Origin on mutating API requests
  */
-export function middleware(request: NextRequest) {
-  const method = request.method.toUpperCase();
+export async function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl;
 
-  // Only check mutating methods
-  if (["POST", "PUT", "DELETE", "PATCH"].includes(method)) {
-    const origin = request.headers.get("origin");
-    const host = request.headers.get("host");
+  // ── Admin seed page protection (login required only for /admin/seed) ──
+  if (pathname.startsWith("/admin/seed")) {
+    const token = request.cookies.get(ADMIN_COOKIE_NAME)?.value;
+    const user = token ? await validateToken(token) : null;
 
-    // If Origin header is present, it must match the host
-    if (origin && host) {
-      try {
-        const originUrl = new URL(origin);
-        if (originUrl.host !== host) {
+    if (!user) {
+      const loginUrl = new URL("/admin/login", request.url);
+      return NextResponse.redirect(loginUrl);
+    }
+  }
+
+  // ── CSRF protection for API routes (V-11) ──
+  if (pathname.startsWith("/api")) {
+    const method = request.method.toUpperCase();
+
+    if (["POST", "PUT", "DELETE", "PATCH"].includes(method)) {
+      const origin = request.headers.get("origin");
+      const host = request.headers.get("host");
+
+      if (origin && host) {
+        try {
+          const originUrl = new URL(origin);
+          if (originUrl.host !== host) {
+            return NextResponse.json(
+              { error: "Cross-origin request blocked" },
+              { status: 403 }
+            );
+          }
+        } catch {
           return NextResponse.json(
-            { error: "Cross-origin request blocked" },
+            { error: "Invalid origin" },
             { status: 403 }
           );
         }
-      } catch {
-        return NextResponse.json(
-          { error: "Invalid origin" },
-          { status: 403 }
-        );
       }
     }
   }
@@ -37,6 +51,6 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  // Apply to all API routes
-  matcher: "/api/:path*",
+  // Apply to admin pages and API routes
+  matcher: ["/admin/:path*", "/api/:path*"],
 };
