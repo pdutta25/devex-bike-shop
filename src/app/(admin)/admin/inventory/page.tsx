@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import { getAllProducts } from "@/lib/queries/product-queries";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";

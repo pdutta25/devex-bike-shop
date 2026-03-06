@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import Link from "next/link";
 import { getFeaturedProducts, getCategories } from "@/lib/queries/product-queries";
 import { StarRating } from "@/components/ui/star-rating";

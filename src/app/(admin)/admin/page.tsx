@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import { getDashboardStats, getRecentOrders } from "@/lib/queries/report-queries";
 import { getLowStockProducts } from "@/lib/queries/product-queries";
 import { formatPrice } from "@/lib/utils";

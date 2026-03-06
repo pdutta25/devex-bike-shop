@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import { getAllCustomers } from "@/lib/queries/customer-queries";
 import { formatPrice } from "@/lib/utils";
 import { Card } from "@/components/ui/card";
