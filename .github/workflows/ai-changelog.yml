@@ -1,0 +1,109 @@
+name: AI Changelog
+
+on:
+  pull_request:
+    types: [closed]
+    branches: [main]
+
+jobs:
+  changelog:
+    name: 📋 AI Changelog
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      models: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Gather PR info
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          PR_TITLE="${{ github.event.pull_request.title }}"
+          PR_NUMBER="${{ github.event.pull_request.number }}"
+          PR_AUTHOR="${{ github.event.pull_request.user.login }}"
+          PR_URL="${{ github.event.pull_request.html_url }}"
+          MERGE_DATE=$(date +%Y-%m-%d)
+
+          # Get PR commits
+          COMMITS=$(gh pr view "$PR_NUMBER" --json commits --jq '.commits[].messageHeadline' 2>/dev/null | head -10 || echo "$PR_TITLE")
+
+          # Get changed files
+          FILES=$(gh pr view "$PR_NUMBER" --json files --jq '.files[].path' 2>/dev/null | head -20 || echo "unknown")
+
+          cat > /tmp/pr_context.txt << CONTEXT
+          PR: #$PR_NUMBER — $PR_TITLE
+          Author: $PR_AUTHOR
+          Date: $MERGE_DATE
+          URL: $PR_URL
+
+          Commits:
+          $COMMITS
+
+          Files changed:
+          $FILES
+          CONTEXT
+
+      - name: Generate changelog entry with AI
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          CONTEXT=$(cat /tmp/pr_context.txt)
+
+          RESPONSE=$(curl -s -X POST "https://models.inference.ai.azure.com/chat/completions" \
+            -H "Content-Type: application/json" \
+            -H "Authorization: Bearer $GITHUB_TOKEN" \
+            -d "$(jq -n \
+              --arg prompt "Generate a changelog entry for this merged PR:\n\n$CONTEXT" \
+              '{
+                model: "gpt-4o-mini",
+                messages: [
+                  {role: "system", content: "You write concise changelog entries. Output ONLY the entry in this exact format:\n\n### [Category emoji] Category\n- Description of change ([#NUMBER](URL)) by @author\n\nCategories: 🚀 Features, 🐛 Bug Fixes, 🔒 Security, 🔧 CI/CD, 📚 Documentation, ♻️ Refactoring. Pick ONE category. One or two bullet points max. No extra text."},
+                  {role: "user", content: $prompt}
+                ],
+                temperature: 0.2,
+                max_tokens: 500
+              }')")
+
+          ENTRY=$(echo "$RESPONSE" | jq -r '.choices[0].message.content // "- Update from PR"')
+          echo "$ENTRY" > /tmp/entry.txt
+
+      - name: Update CHANGELOG.md
+        run: |
+          ENTRY=$(cat /tmp/entry.txt)
+          DATE=$(date +%Y-%m-%d)
+
+          # Create CHANGELOG.md if it doesn't exist
+          if [ ! -f CHANGELOG.md ]; then
+            echo "# Changelog" > CHANGELOG.md
+            echo "" >> CHANGELOG.md
+            echo "> Auto-maintained by AI on every merged PR." >> CHANGELOG.md
+            echo "" >> CHANGELOG.md
+          fi
+
+          # Insert new entry after the header (line 4)
+          TEMP=$(mktemp)
+          head -4 CHANGELOG.md > "$TEMP"
+          echo "## $DATE" >> "$TEMP"
+          echo "" >> "$TEMP"
+          echo "$ENTRY" >> "$TEMP"
+          echo "" >> "$TEMP"
+          tail -n +5 CHANGELOG.md >> "$TEMP"
+          mv "$TEMP" CHANGELOG.md
+
+      - name: Commit changelog
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add CHANGELOG.md
+          git diff --staged --quiet || {
+            git commit -m "docs: update changelog for PR #${{ github.event.pull_request.number }}"
+            git push
+          }
+          echo "✅ Changelog updated"
