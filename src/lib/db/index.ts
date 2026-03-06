@@ -113,10 +113,17 @@ export const db = drizzle(sqlite, { schema });
 export { sqlite };
 
 // Auto-seed if database is empty (handles Render's ephemeral storage)
+// Uses a ready promise so the app can await seeding before serving requests
 const rowCount = sqlite.prepare("SELECT COUNT(*) as count FROM categories").get() as { count: number };
-if (rowCount.count === 0) {
-  console.log("🌱 Empty database detected — auto-seeding...");
-  import("@/lib/seed").then(({ seedAll }) =>
-    seedAll().then((r) => console.log("✅ Auto-seed complete:", r))
-  ).catch((err) => console.error("❌ Auto-seed failed:", err));
-}
+export const dbReady: Promise<void> = rowCount.count === 0
+  ? (async () => {
+      console.log("🌱 Empty database detected — auto-seeding...");
+      try {
+        const { seedAll } = await import("@/lib/seed");
+        const result = await seedAll();
+        console.log("✅ Auto-seed complete:", result);
+      } catch (err) {
+        console.error("❌ Auto-seed failed:", err);
+      }
+    })()
+  : Promise.resolve();
