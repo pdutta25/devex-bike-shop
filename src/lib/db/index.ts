@@ -14,7 +14,7 @@ const sqlite = new Database(dbPath);
 
 sqlite.pragma("journal_mode = WAL");
 sqlite.pragma("foreign_keys = ON");
-sqlite.pragma("busy_timeout = 5000");
+sqlite.pragma("busy_timeout = 30000");
 
 // Run migrations inline at module init (CREATE IF NOT EXISTS is idempotent)
 sqlite.exec(`
@@ -113,17 +113,20 @@ export const db = drizzle(sqlite, { schema });
 export { sqlite };
 
 // Auto-seed if database is empty (handles Render's ephemeral storage)
-// Uses a ready promise so the app can await seeding before serving requests
+// Uses a ready promise so the app can await seeding before serving requests.
+// Skip during `next build` — multiple build workers would fight over the DB lock.
+const isBuildPhase = process.env.NEXT_PHASE === "phase-production-build";
 const rowCount = sqlite.prepare("SELECT COUNT(*) as count FROM categories").get() as { count: number };
-export const dbReady: Promise<void> = rowCount.count === 0
-  ? (async () => {
-      console.log("🌱 Empty database detected — auto-seeding...");
-      try {
-        const { seedAll } = await import("@/lib/seed");
-        const result = await seedAll();
-        console.log("✅ Auto-seed complete:", result);
-      } catch (err) {
-        console.error("❌ Auto-seed failed:", err);
-      }
-    })()
-  : Promise.resolve();
+export const dbReady: Promise<void> =
+  !isBuildPhase && rowCount.count === 0
+    ? (async () => {
+        console.log("🌱 Empty database detected — auto-seeding...");
+        try {
+          const { seedAll } = await import("@/lib/seed");
+          const result = await seedAll();
+          console.log("✅ Auto-seed complete:", result);
+        } catch (err) {
+          console.error("❌ Auto-seed failed:", err);
+        }
+      })()
+    : Promise.resolve();
