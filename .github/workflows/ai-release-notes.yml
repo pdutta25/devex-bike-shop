@@ -18,40 +18,51 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Gather commit history
-        id: commits
+      - name: Gather code changes
         run: |
-          # Get commits since last tag (or last 20 if no tags)
+          # Find comparison point: last tag or ~10 commits back
           LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
           if [ -n "$LAST_TAG" ]; then
-            COMMITS=$(git log "$LAST_TAG"..HEAD --pretty=format:"- %s (%h)" --no-merges | head -30)
-            RANGE="$LAST_TAG → HEAD"
+            BASE="$LAST_TAG"
           else
-            COMMITS=$(git log --pretty=format:"- %s (%h)" --no-merges -20)
-            RANGE="last 20 commits"
+            BASE="HEAD~10"
           fi
 
-          # Get changed files summary
-          if [ -n "$LAST_TAG" ]; then
-            FILES=$(git diff --stat "$LAST_TAG"..HEAD | tail -1)
-          else
-            FILES=$(git diff --stat HEAD~20..HEAD 2>/dev/null | tail -1 || echo "multiple files changed")
-          fi
+          # Commit messages for context
+          git log "$BASE"..HEAD --pretty=format:"- %s (%h)" --no-merges | head -20 > /tmp/commits.txt
 
-          # Save to file (avoids multiline env var issues)
-          echo "$COMMITS" > /tmp/commits.txt
-          echo "$RANGE" > /tmp/range.txt
-          echo "$FILES" > /tmp/files.txt
+          # Actual code diff (truncated to fit token budget)
+          git diff "$BASE"..HEAD --stat > /tmp/diff_stat.txt
+          git diff "$BASE"..HEAD -- '*.ts' '*.tsx' '*.yml' '*.json' \
+            ':!package-lock.json' ':!*.test.*' \
+            | head -300 > /tmp/diff.txt
 
-      - name: Generate release notes with AI
+          echo "BASE=$BASE" > /tmp/meta.txt
+          echo "COMMITS=$(wc -l < /tmp/commits.txt | tr -d ' ')" >> /tmp/meta.txt
+          echo "FILES_CHANGED=$(wc -l < /tmp/diff_stat.txt | tr -d ' ')" >> /tmp/meta.txt
+
+      - name: Generate plain-English release notes
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           COMMITS=$(cat /tmp/commits.txt)
-          RANGE=$(cat /tmp/range.txt)
-          FILES=$(cat /tmp/files.txt)
+          DIFF_STAT=$(cat /tmp/diff_stat.txt | tail -1)
+          DIFF=$(cat /tmp/diff.txt | head -c 5000)
 
-          PROMPT="Generate concise release notes for a bike shop e-commerce app. Group changes by category (Features, Fixes, Security, CI/CD, Docs). Use emoji prefixes. Keep it short.\n\nCommit range: $RANGE\nFiles: $FILES\n\nCommits:\n$COMMITS"
+          PROMPT=$(cat <<PROMPT_END
+          Here are the commit messages:
+          $COMMITS
+
+          Summary: $DIFF_STAT
+
+          Here is the actual code diff:
+          \`\`\`
+          $DIFF
+          \`\`\`
+
+          Write release notes explaining what actually changed in the code in plain English.
+          PROMPT_END
+          )
 
           RESPONSE=$(curl -s -X POST "https://models.inference.ai.azure.com/chat/completions" \
             -H "Content-Type: application/json" \
@@ -61,16 +72,15 @@ jobs:
               '{
                 model: "gpt-4o-mini",
                 messages: [
-                  {role: "system", content: "You are a release notes writer. Write clean markdown release notes. No title — start with categories directly. Be concise."},
+                  {role: "system", content: "You write release notes that explain code changes in plain English so anyone can understand them. Describe WHAT changed and WHY it matters — not just file names or commit messages. Group by theme. Use simple language. Example: Instead of \"Added Zod validation to cart POST endpoint\" say \"The shopping cart now validates items before adding them, preventing invalid products or quantities from being saved.\" Start directly with the grouped changes. Use emoji prefixes for each group."},
                   {role: "user", content: $prompt}
                 ],
                 temperature: 0.3,
-                max_tokens: 1500
+                max_tokens: 2000
               }')")
 
           NOTES=$(echo "$RESPONSE" | jq -r '.choices[0].message.content // "Failed to generate notes"')
 
-          # Create version tag based on date
           VERSION="v$(date +%Y.%m.%d)-${{ github.run_number }}"
           echo "$VERSION" > /tmp/version.txt
           echo "$NOTES" > /tmp/notes.txt
