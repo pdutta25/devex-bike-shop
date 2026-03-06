@@ -1,10 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
 import { seedAll, seedProducts, seedCustomersAndOrders, seedReviews, resetAllData } from "@/lib/seed";
-import { isAdminAuthorized } from "@/lib/auth";
 
 export async function POST(request: NextRequest) {
-  if (!isAdminAuthorized(request)) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  // Seed is an internal admin tool — allow in dev and from same-origin in production.
+  // External API callers can use x-admin-key if needed.
+  if (process.env.NODE_ENV !== "development") {
+    const origin = request.headers.get("origin");
+    const host = request.headers.get("host");
+    const adminKey = request.headers.get("x-admin-key");
+    const ADMIN_KEY = process.env.ADMIN_API_KEY || "";
+
+    const isSameOrigin = origin && host && new URL(origin).host === host;
+    const hasValidKey = ADMIN_KEY.length > 0 && adminKey === ADMIN_KEY;
+
+    if (!isSameOrigin && !hasValidKey) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
   }
 
   const { action } = await request.json();
