@@ -8,21 +8,10 @@ const SESSION_SECRET = process.env.ADMIN_SESSION_SECRET || "devex-bike-shop-demo
 
 // Default credentials — override via environment variables
 const ADMIN_USERNAME = process.env.ADMIN_USERNAME || "admin";
-// Default password stored as SHA-256 hash (never plain text in codebase)
+// Default password stored as bcrypt hash (cost factor 12, never plain text)
 const ADMIN_PASSWORD_HASH =
   process.env.ADMIN_PASSWORD_HASH ||
-  "dca59be855bdb7733143f30ae880454cefbfc1c0501f9507e53c06832554886a";
-
-/**
- * SHA-256 hash using Web Crypto API (works in Edge + Node).
- */
-async function sha256(input: string): Promise<string> {
-  const enc = new TextEncoder();
-  const hash = await crypto.subtle.digest("SHA-256", enc.encode(input));
-  return Array.from(new Uint8Array(hash))
-    .map((b) => b.toString(16).padStart(2, "0"))
-    .join("");
-}
+  "$2b$12$MCtPy/EAfXwBQp3QmM8qbezwx/Dv.IPUnlRVcXcu1gsrn4Dxm2Nsa";
 
 /**
  * HMAC-SHA256 sign using Web Crypto API (works in Edge + Node).
@@ -77,12 +66,14 @@ export async function validateToken(token: string): Promise<string | null> {
 }
 
 /**
- * Verify admin credentials by comparing SHA-256 hash of input password.
+ * Verify admin credentials using bcrypt comparison.
+ * Uses dynamic import so bcryptjs is only loaded in Node.js runtime
+ * (login API route), not in Edge runtime (middleware).
  */
 export async function verifyCredentials(username: string, password: string): Promise<boolean> {
   if (username !== ADMIN_USERNAME) return false;
-  const inputHash = await sha256(password);
-  return inputHash === ADMIN_PASSWORD_HASH;
+  const bcrypt = await import("bcryptjs");
+  return bcrypt.compare(password, ADMIN_PASSWORD_HASH);
 }
 
 /**
