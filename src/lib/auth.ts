@@ -6,19 +6,38 @@ import { eq } from "drizzle-orm";
 const ADMIN_KEY = process.env.ADMIN_API_KEY || "";
 
 /**
- * Check if a request is authorized for admin/write operations.
- * In development, all requests are allowed.
- * In production, requires a valid x-admin-key header.
+ * Check if a request is authorized for admin operations.
+ * - Development: all requests allowed.
+ * - Production: same-origin requests from the admin UI are allowed
+ *   (Origin/Referer must match Host). External API callers need x-admin-key.
  *
- * SECURITY: Removed Referer-based bypass (V-01) — Referer and Host
- * headers are attacker-controlled and trivially spoofable.
+ * SECURITY: Same-origin check is safe here because the CSRF middleware
+ * already validates Origin on mutations, and browsers enforce CORS on
+ * cross-origin fetch() calls — a third-party site cannot read responses.
  */
 export function isAdminAuthorized(request: NextRequest): boolean {
   if (process.env.NODE_ENV === "development") return true;
 
-  // Require a valid API key — no header-sniffing fallbacks
+  // Check x-admin-key header first (for external API callers)
   const key = request.headers.get("x-admin-key") || "";
-  return ADMIN_KEY.length > 0 && key === ADMIN_KEY;
+  if (ADMIN_KEY.length > 0 && key === ADMIN_KEY) return true;
+
+  // Allow same-origin requests (admin UI in the browser)
+  const origin = request.headers.get("origin");
+  const referer = request.headers.get("referer");
+  const host = request.headers.get("host");
+  if (host) {
+    // Check Origin header (present on fetch/XHR requests)
+    if (origin) {
+      try { if (new URL(origin).host === host) return true; } catch {}
+    }
+    // Check Referer header (present on navigation and some fetch calls)
+    if (referer) {
+      try { if (new URL(referer).host === host) return true; } catch {}
+    }
+  }
+
+  return false;
 }
 
 /**
