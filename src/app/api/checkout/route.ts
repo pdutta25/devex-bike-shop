@@ -22,14 +22,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Cart is empty" }, { status: 400 });
   }
 
-  // Simulate payment processing (90% success rate)
-  const simulateFailure = body.simulateFailure === true;
-  const paymentSuccess = simulateFailure ? false : Math.random() > 0.1;
-
-  if (!paymentSuccess) {
-    return NextResponse.json({ error: "Payment declined. Please try again." }, { status: 402 });
-  }
-
+  // Demo store — payment always accepted
   // Create or lookup customer (outside transaction — idempotent)
   let customer = db
     .select()
@@ -60,7 +53,6 @@ export async function POST(request: NextRequest) {
   const total = subtotal + taxAmount + shippingAmount;
 
   const orderNumber = generateOrderNumber();
-  const lastFour = parsed.data.cardNumber.slice(-4);
 
   // SECURITY (V-05): Wrap order creation + stock decrement in a transaction.
   // Use BEGIN IMMEDIATE to acquire a write lock upfront, preventing TOCTOU race.
@@ -105,8 +97,8 @@ export async function POST(request: NextRequest) {
           shippingCity: parsed.data.city || null,
           shippingState: parsed.data.state || null,
           shippingZip: parsed.data.zipCode || null,
-          paymentMethod: "credit_card",
-          paymentLastFour: lastFour,
+          paymentMethod: "demo",
+          paymentLastFour: "0000",
           paymentStatus: "paid",
         })
         .returning()

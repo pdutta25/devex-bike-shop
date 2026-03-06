@@ -22,10 +22,6 @@ export const checkoutSchema = z.object({
   city: z.string().optional(),
   state: z.string().optional(),
   zipCode: z.string().optional(),
-  cardNumber: z.string().min(13).max(19),
-  cardExpiry: z.string().regex(/^\d{2}\/\d{2}$/, "MM/YY format"),
-  cardCvv: z.string().length(3),
-  cardholderName: z.string().min(1),
 });
 
 export const productSchema = z.object({
