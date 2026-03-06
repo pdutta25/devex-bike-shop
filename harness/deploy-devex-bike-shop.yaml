@@ -237,12 +237,12 @@ pipeline:
                           echo ""
                           echo "✅ DEV smoke tests passed — build is healthy"
 
-              # ── Step 4: Certify DEV Build (Auto-Approve via timeout) ──
+              # ── Step 4: Certify DEV Build (Auto-Approve in 2s) ──
               - step:
                   name: Certify DEV Build
                   identifier: Certify_DEV_Build
                   type: HarnessApproval
-                  timeout: 1m
+                  timeout: 2s
                   spec:
                     approvalMessage: |-
                       ✅ AUTO-CERTIFY: DEV Build
