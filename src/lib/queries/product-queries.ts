@@ -1,4 +1,4 @@
-import { db } from "@/lib/db";
+import { db, dbReady } from "@/lib/db";
 import { products, categories } from "@/lib/db/schema";
 import { eq, and, gte, lte, like, desc, asc, sql } from "drizzle-orm";
 
@@ -33,6 +33,7 @@ function withCategorySlug<T extends { categoryId: number }>(
 }
 
 export async function getProducts(filters: ProductFilters = {}) {
+  await dbReady;
   const {
     category,
     minPrice,
@@ -135,6 +136,7 @@ export async function getProductById(id: number) {
 }
 
 export async function getFeaturedProducts(limit = 8) {
+  await dbReady;
   const items = db
     .select()
     .from(products)
@@ -161,6 +163,7 @@ export async function getRelatedProducts(productId: number, categoryId: number, 
 }
 
 export async function getCategories() {
+  await dbReady;
   return db.select().from(categories).orderBy(asc(categories.displayOrder));
 }
 
