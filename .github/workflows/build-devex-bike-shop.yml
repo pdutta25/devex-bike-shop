@@ -44,6 +44,7 @@ jobs:
   # ─────────────────────────────────────────────
   build:
     name: 🔨 Build (Next.js)
+    if: ${{ !inputs.test_deploy }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -78,6 +79,7 @@ jobs:
   # ─────────────────────────────────────────────
   lint:
     name: 📋 Lint (ESLint)
+    if: ${{ !inputs.test_deploy }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -113,6 +115,7 @@ jobs:
   # ─────────────────────────────────────────────
   test:
     name: 🧪 Test (Vitest)
+    if: ${{ !inputs.test_deploy }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -141,6 +144,7 @@ jobs:
   security-scan:
     name: 🛡️ Security Scan (Trivy + npm audit)
     needs: [build]
+    if: ${{ !inputs.test_deploy }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -181,6 +185,7 @@ jobs:
   code-quality:
     name: 📊 Code Quality (SonarCloud)
     needs: [build]
+    if: ${{ !inputs.test_deploy }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -207,6 +212,7 @@ jobs:
   deploy-gate:
     name: 🚀 Deploy (Harness)
     needs: [build, lint, test, security-scan, code-quality]
+    if: ${{ always() }}
     runs-on: ubuntu-latest
     steps:
       - name: CI Summary
@@ -285,7 +291,7 @@ jobs:
   generate-docs:
     name: 📚 Generate Docs
     needs: [build]
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push' && !inputs.test_deploy
     runs-on: ubuntu-latest
     permissions:
       contents: write
