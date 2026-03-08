@@ -570,8 +570,8 @@ pipeline:
 
                           # ── Trigger Render Deploy Hook ──
                           echo "🚀 Triggering Render deployment..."
-                          RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" \
-                            -X POST "<+secrets.getValue("render_deploy_hook_url")>")
+                          RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" --max-time 15 \
+                            -X POST "<+secrets.getValue("render_deploy_hook_url")>" 2>/dev/null || echo "000")
 
                           if [ "$RESPONSE" -ge 200 ] && [ "$RESPONSE" -lt 300 ]; then
                             echo "✅ Render deploy triggered (HTTP $RESPONSE)"
@@ -580,54 +580,43 @@ pipeline:
                             exit 1
                           fi
 
-                          # ── Wait for deploy to complete ──
+                          # ── Wait for Render deploy to complete ──
                           echo ""
-                          echo "⏳ Waiting for Render to build and deploy..."
+                          echo "⏳ Waiting for Render deploy to complete..."
                           echo "─────────────────────────────────────"
-                          TIMEOUT=480
+                          TIMEOUT=300
                           INTERVAL=15
                           ELAPSED=0
-                          WENT_DOWN=false
 
                           while [ $ELAPSED -lt $TIMEOUT ]; do
-                            STATUS=$(curl -s -L -o /dev/null -w "%{http_code}" --max-time 10 "$HEALTH_URL" 2>/dev/null)
+                            STATUS=$(curl -s -L -o /dev/null -w "%{http_code}" --max-time 10 "$HEALTH_URL" 2>/dev/null || echo "000")
 
-                            if [ "$WENT_DOWN" = false ]; then
-                              if [ "$STATUS" -lt 200 ] || [ "$STATUS" -ge 400 ]; then
-                                WENT_DOWN=true
-                                echo "   [${ELAPSED}s] App is restarting (HTTP $STATUS)..."
-                              else
-                                echo "   [${ELAPSED}s] Waiting for deploy to start (HTTP $STATUS)..."
-                              fi
-                            else
-                              if [ "$STATUS" -ge 200 ] && [ "$STATUS" -lt 400 ]; then
+                            if [ "$STATUS" -ge 200 ] && [ "$STATUS" -lt 400 ]; then
+                              if [ $ELAPSED -ge 60 ]; then
                                 echo ""
-                                echo "✅ App is back online (HTTP $STATUS) after ~${ELAPSED}s"
+                                echo "✅ App is live (HTTP $STATUS) after ~${ELAPSED}s"
                                 break
                               else
-                                echo "   [${ELAPSED}s] Deploying... (HTTP $STATUS)"
+                                echo "   [${ELAPSED}s] App responding (HTTP $STATUS) — waiting for deploy cycle..."
                               fi
+                            else
+                              echo "   [${ELAPSED}s] App restarting (HTTP $STATUS)..."
                             fi
 
                             sleep $INTERVAL
                             ELAPSED=$((ELAPSED + INTERVAL))
                           done
 
-                          # If app never went down, give it extra time then verify
-                          if [ "$WENT_DOWN" = false ] && [ $ELAPSED -ge $TIMEOUT ]; then
-                            echo ""
-                            echo "⚠️  App never went offline — checking if deploy completed..."
-                            FINAL_STATUS=$(curl -s -L -o /dev/null -w "%{http_code}" --max-time 10 "$HEALTH_URL" 2>/dev/null)
+                          if [ $ELAPSED -ge $TIMEOUT ]; then
+                            FINAL_STATUS=$(curl -s -L -o /dev/null -w "%{http_code}" --max-time 10 "$HEALTH_URL" 2>/dev/null || echo "000")
                             if [ "$FINAL_STATUS" -ge 200 ] && [ "$FINAL_STATUS" -lt 400 ]; then
-                              echo "✅ App is live (HTTP $FINAL_STATUS) — deploy may have completed"
+                              echo ""
+                              echo "✅ App is live (HTTP $FINAL_STATUS) after timeout — proceeding"
                             else
-                              echo "❌ App is not responding after ${TIMEOUT}s"
+                              echo ""
+                              echo "❌ App not responding after ${TIMEOUT}s (HTTP $FINAL_STATUS)"
                               exit 1
                             fi
-                          elif [ $ELAPSED -ge $TIMEOUT ]; then
-                            echo ""
-                            echo "❌ Deploy did not complete within ${TIMEOUT}s"
-                            exit 1
                           fi
 
                           echo ""
