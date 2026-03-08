@@ -200,7 +200,7 @@ jobs:
   # STAGE 3: DEPLOY GATE (all checks must pass)
   # ─────────────────────────────────────────────
   deploy-gate:
-    name: 🚀 Trigger Harness
+    name: 🚀 Deploy (Harness)
     needs: [build, lint, test, security-scan, code-quality]
     runs-on: ubuntu-latest
     steps:
