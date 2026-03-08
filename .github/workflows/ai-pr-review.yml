@@ -3,6 +3,15 @@ name: AI PR Review
 on:
   pull_request:
     types: [opened, synchronize]
+    paths-ignore:
+      - '*.md'
+      - 'docs/**'
+      - '.github/dependabot.yml'
+
+# Only one review per PR at a time
+concurrency:
+  group: ai-review-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
 
 jobs:
   ai-review:

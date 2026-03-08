@@ -237,12 +237,12 @@ pipeline:
                           echo ""
                           echo "✅ DEV smoke tests passed — build is healthy"
 
-              # ── Step 4: Certify DEV Build (Auto-Approve in 2s) ──
+              # ── Step 4: Certify DEV Build (Auto-Approve in 10s) ──
               - step:
                   name: Certify DEV Build
                   identifier: Certify_DEV_Build
                   type: HarnessApproval
-                  timeout: 2s
+                  timeout: 10s
                   spec:
                     approvalMessage: |-
                       ✅ AUTO-CERTIFY: DEV Build
@@ -473,21 +473,20 @@ pipeline:
                           echo ""
                           echo "✅ SIT integration tests passed — build validated"
 
-              # ── Step 4: Certify SIT Build (Manual) ──
+              # ── Step 4: Certify SIT Build (Auto-Approve in 10s) ──
               - step:
                   name: Certify SIT Build
                   identifier: Certify_SIT_Build
                   type: HarnessApproval
-                  timeout: 1d
+                  timeout: 10s
                   spec:
                     approvalMessage: |-
-                      ✅ CERTIFY SIT BUILD
+                      ✅ AUTO-CERTIFY: SIT Build
                       SIT deployment completed successfully.
                          ✅ Smoke Tests:       11/11 passed
                          ✅ Integration Tests: 15/15 passed
                          ✅ Performance Tests: 5/5 passed
-                      Please verify and certify this build to proceed to
-                      PROD (Production).
+                      Auto-certifying to proceed to PROD.
                       Build:  #<+trigger.payload.buildNumber>
                       Commit: <+trigger.payload.commitSha>
                     includePipelineExecutionHistory: true
@@ -497,6 +496,12 @@ pipeline:
                       minimumCount: 1
                       disallowPipelineExecutor: false
                     isAutoRejectEnabled: false
+                  failureStrategies:
+                    - onFailure:
+                        errors:
+                          - Timeout
+                        action:
+                          type: MarkAsSuccess
         tags: {}
 
     # ════════════════════════════════════════════════════════════

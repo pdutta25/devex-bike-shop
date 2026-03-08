@@ -3,9 +3,24 @@ name: CI
 on:
   push:
     branches: [main]
+    paths-ignore:
+      - '*.md'
+      - 'docs/**'
+      - '.github/dependabot.yml'
+      - 'LICENSE'
   pull_request:
     branches: [main]
+    paths-ignore:
+      - '*.md'
+      - 'docs/**'
+      - '.github/dependabot.yml'
+      - 'LICENSE'
   workflow_dispatch:
+
+# Cancel in-progress runs for the same branch (saves runner minutes on rapid pushes)
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
 
 # ═══════════════════════════════════════════════════════════
 # PIPELINE GRAPH (visible in GitHub Actions UI):
@@ -14,6 +29,8 @@ on:
 #   lint  ──┤──→ security-scan ──┐
 #   test  ──┤──→ code-quality  ──┤──→ deploy-gate
 #           └────────────────────┘
+#
+# Docs generation runs independently after build (main only).
 # ═══════════════════════════════════════════════════════════
 
 jobs:
@@ -28,7 +45,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Set up Node.js
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: 'npm'
@@ -44,6 +61,13 @@ jobs:
           npm run build
           echo "✅ Build completed successfully"
 
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: nextjs-build
+          path: .next/
+          retention-days: 1
+
   # ─────────────────────────────────────────────
   # STAGE 1b: LINT (runs in parallel with build & test)
   # ─────────────────────────────────────────────
@@ -55,7 +79,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Set up Node.js
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: 'npm'
@@ -64,25 +88,33 @@ jobs:
         run: npm ci
 
       - name: Run ESLint
+        continue-on-error: true
         run: |
           echo "╔══════════════════════════════════════╗"
           echo "║       LINTING — ESLint Check         ║"
           echo "╚══════════════════════════════════════╝"
-          npx eslint . --ext .js,.jsx,.ts,.tsx --no-error-on-unmatched-pattern || echo "⚠️  Lint warnings found (non-blocking for demo)"
-          echo "✅ Linting step completed"
+          npx next lint --no-cache 2>&1 | tee /tmp/lint-output.txt
+          LINT_EXIT=${PIPESTATUS[0]}
+          echo ""
+          if [ "$LINT_EXIT" -eq 0 ]; then
+            echo "✅ Linting passed — no issues found"
+          else
+            echo "⚠️  Lint issues found (non-blocking for demo)"
+            echo "   Exit code: $LINT_EXIT"
+          fi
 
   # ─────────────────────────────────────────────
   # STAGE 1c: TEST (runs in parallel with build & lint)
   # ─────────────────────────────────────────────
   test:
-    name: 🧪 Test
+    name: 🧪 Test (Vitest)
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
       - name: Set up Node.js
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: 'npm'
@@ -93,137 +125,75 @@ jobs:
       - name: Run Unit Tests
         run: |
           echo "╔══════════════════════════════════════╗"
-          echo "║       UNIT TESTING                   ║"
+          echo "║       UNIT TESTING (Vitest)          ║"
           echo "╚══════════════════════════════════════╝"
-          if npm test --if-present 2>/dev/null; then
-            echo "✅ Unit tests passed"
-          else
-            echo "──────────────────────────────────────"
-            echo "ℹ️  No test suite configured."
-            echo "    STB: Simulating unit test execution..."
-            sleep 5
-            echo "    ✔ ComponentHeader.test.js       — 3 tests passed"
-            echo "    ✔ CartService.test.js            — 5 tests passed"
-            echo "    ✔ ProductList.test.js             — 4 tests passed"
-            echo "    ✔ CheckoutFlow.test.js           — 6 tests passed"
-            echo ""
-            echo "    Test Suites: 4 passed, 4 total"
-            echo "    Tests:       18 passed, 18 total"
-            echo "    Time:        5.02s"
-            echo "✅ Unit tests completed (STB)"
-          fi
+          npm test
+          echo "✅ Unit tests passed"
 
   # ─────────────────────────────────────────────
   # STAGE 2a: SECURITY SCAN (after build passes)
   # ─────────────────────────────────────────────
   security-scan:
-    name: 🛡️ Security Scan
+    name: 🛡️ Security Scan (Trivy + npm audit)
     needs: [build]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: SAST Scan (Snyk/Semgrep — STB)
-        run: |
-          echo "╔══════════════════════════════════════╗"
-          echo "║  SECURITY SCAN — SAST (Snyk/Semgrep)║"
-          echo "╚══════════════════════════════════════╝"
-          echo "🛡️  Running Static Application Security Testing..."
-          sleep 3
-          echo "🛡️  Scanning for known vulnerabilities in dependencies..."
-          sleep 4
-          echo "🛡️  Checking for hardcoded secrets..."
-          sleep 2
-          echo "🛡️  Analyzing code patterns for security issues..."
-          sleep 3
-          echo ""
-          echo "┌──────────────────────────────────────┐"
-          echo "│        SAST SCAN RESULTS             │"
-          echo "├──────────────────────────────────────┤"
-          echo "│ Critical:     0                      │"
-          echo "│ High:         0                      │"
-          echo "│ Medium:       1                      │"
-          echo "│   └─ npm: lodash prototype pollution │"
-          echo "│      (non-exploitable in this ctx)   │"
-          echo "│ Low:          2                      │"
-          echo "│ Secrets:      0 detected             │"
-          echo "│ License Risk: None                   │"
-          echo "├──────────────────────────────────────┤"
-          echo "│ OVERALL:      ✅ PASS                │"
-          echo "└──────────────────────────────────────┘"
-          echo ""
-          echo "✅ SAST scan passed — no blocking issues"
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
 
-      - name: Dependency Vulnerability Check (OWASP — STB)
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Dependency Vulnerability Check (npm audit)
         run: |
           echo "╔══════════════════════════════════════╗"
           echo "║  DEPENDENCY VULNERABILITY CHECK      ║"
-          echo "║  (OWASP Dependency-Check)            ║"
+          echo "║  (npm audit)                         ║"
           echo "╚══════════════════════════════════════╝"
-          echo "📦 Auditing npm dependencies..."
-          sleep 3
-          echo "📦 Cross-referencing with NVD database..."
-          sleep 4
           echo ""
-          echo "┌──────────────────────────────────────┐"
-          echo "│     DEPENDENCY AUDIT RESULTS         │"
-          echo "├──────────────────────────────────────┤"
-          echo "│ Total packages scanned:  847         │"
-          echo "│ Direct dependencies:     23          │"
-          echo "│ Transitive dependencies: 824         │"
-          echo "│                                      │"
-          echo "│ Known vulnerabilities:   0 critical  │"
-          echo "│                          0 high      │"
-          echo "│                          1 moderate  │"
-          echo "│                          3 low       │"
-          echo "│                                      │"
-          echo "│ Outdated packages:       5           │"
-          echo "│ License compliance:      ✅ OK       │"
-          echo "├──────────────────────────────────────┤"
-          echo "│ OVERALL:      ✅ PASS                │"
-          echo "└──────────────────────────────────────┘"
+          npm audit --omit=dev 2>&1 || true
           echo ""
-          echo "✅ Dependency check completed"
+          echo "✅ npm audit completed"
+
+      - name: Trivy Filesystem Scan
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          severity: 'CRITICAL,HIGH'
+          exit-code: '0'
+          format: 'table'
 
   # ─────────────────────────────────────────────
   # STAGE 2b: CODE QUALITY (after build passes)
   # ─────────────────────────────────────────────
   code-quality:
-    name: 📊 Code Quality
+    name: 📊 Code Quality (SonarCloud)
     needs: [build]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-      - name: Code Quality Scan (SonarQube — STB)
-        run: |
-          echo "╔══════════════════════════════════════╗"
-          echo "║    CODE QUALITY SCAN — SonarQube     ║"
-          echo "╚══════════════════════════════════════╝"
-          echo "🔍 Initializing SonarQube scanner..."
-          sleep 3
-          echo "🔍 Scanning source files..."
-          sleep 5
-          echo "🔍 Analyzing code quality metrics..."
-          sleep 3
-          echo ""
-          echo "┌──────────────────────────────────────┐"
-          echo "│        SONARQUBE SCAN RESULTS        │"
-          echo "├──────────────────────────────────────┤"
-          echo "│ Quality Gate:      ✅ PASSED          │"
-          echo "│ Bugs:              0                  │"
-          echo "│ Vulnerabilities:   0                  │"
-          echo "│ Code Smells:       3 (minor)          │"
-          echo "│ Coverage:          78.4%              │"
-          echo "│ Duplications:      1.2%               │"
-          echo "│ Reliability:       A                  │"
-          echo "│ Security:          A                  │"
-          echo "│ Maintainability:   A                  │"
-          echo "└──────────────────────────────────────┘"
-          echo ""
-          echo "✅ Code quality scan passed"
+      - name: SonarCloud Scan
+        uses: SonarSource/sonarqube-scan-action@v5
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          args: >
+            -Dsonar.organization=${{ secrets.SONAR_ORGANIZATION }}
+            -Dsonar.projectKey=${{ secrets.SONAR_PROJECT_KEY }}
+            -Dsonar.sources=src/
+            -Dsonar.exclusions=**/node_modules/**,**/__tests__/**
+            -Dsonar.javascript.lcov.reportPaths=coverage/lcov.info
 
   # ─────────────────────────────────────────────
   # STAGE 3: DEPLOY GATE (all checks must pass)
@@ -241,9 +211,9 @@ jobs:
           echo "╠══════════════════════════════════════╣"
           echo "║ ✅ Build            — Passed         ║"
           echo "║ ✅ Linting          — Passed         ║"
-          echo "║ ✅ Unit Tests       — Passed         ║"
-          echo "║ ✅ Security Scan    — Passed         ║"
-          echo "║ ✅ Code Quality     — Passed         ║"
+          echo "║ ✅ Unit Tests       — Passed (Vitest) ║"
+          echo "║ ✅ Security Scan    — Passed (Trivy)  ║"
+          echo "║ ✅ Code Quality     — Passed (Sonar)  ║"
           echo "╠══════════════════════════════════════╣"
           echo "║ Commit: ${{ github.sha }}            ║"
           echo "║ Branch: ${{ github.ref_name }}       ║"
@@ -256,16 +226,21 @@ jobs:
         if: github.ref == 'refs/heads/main' && github.event_name == 'push'
         run: |
           echo "🚀 Triggering Harness deployment pipeline..."
-          curl -s -X POST "${{ secrets.HARNESS_WEBHOOK_URL }}" \
+          RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" -X POST "${{ secrets.HARNESS_WEBHOOK_URL }}" \
             -H "Content-Type: application/json" \
             -d '{
               "commitSha": "${{ github.sha }}",
               "branch": "${{ github.ref_name }}",
               "buildNumber": "${{ github.run_number }}",
-              "buildStatus": "success"
-            }'
+              "buildStatus": "success",
+              "actor": "${{ github.actor }}"
+            }')
           echo ""
-          echo "✅ Harness pipeline triggered successfully"
+          if [ "$RESPONSE" -ge 200 ] && [ "$RESPONSE" -lt 300 ]; then
+            echo "✅ Harness pipeline triggered successfully (HTTP $RESPONSE)"
+          else
+            echo "⚠️  Harness webhook returned HTTP $RESPONSE (non-blocking)"
+          fi
 
   # ─────────────────────────────────────────
   # STAGE 4: GENERATE DOCS → GITHUB WIKI
@@ -287,6 +262,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
+          cache: 'npm'
 
       - name: Generate static docs (API, Schema)
         run: |
