@@ -568,7 +568,7 @@ pipeline:
                           APP_URL="<+secrets.getValue("render_app_url")>"
                           HEALTH_URL="${APP_URL}/api/health"
 
-                          # ── Trigger Render Deploy Hook (non-blocking) ──
+                          # ── Trigger Render Deploy Hook ──
                           echo "🚀 Triggering Render deployment..."
                           RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" --max-time 15 \
                             -X POST "<+secrets.getValue("render_deploy_hook_url")>" 2>/dev/null || echo "000")
@@ -576,26 +576,22 @@ pipeline:
                           if [ "$RESPONSE" -ge 200 ] && [ "$RESPONSE" -lt 300 ]; then
                             echo "✅ Render deploy triggered (HTTP $RESPONSE)"
                           else
-                            echo "⚠️  Deploy hook returned HTTP $RESPONSE — Render may auto-deploy from git"
+                            echo "❌ Failed to trigger Render deploy (HTTP $RESPONSE)"
+                            exit 1
                           fi
 
                           # ── Wait for Render deploy to complete ──
                           echo ""
                           echo "⏳ Waiting for Render deploy to complete..."
                           echo "─────────────────────────────────────"
-                          TIMEOUT=480
+                          TIMEOUT=300
                           INTERVAL=15
                           ELAPSED=0
-
-                          # Get initial response to compare against
-                          INITIAL_BODY=$(curl -s -L --max-time 10 "$HEALTH_URL" 2>/dev/null || echo "")
 
                           while [ $ELAPSED -lt $TIMEOUT ]; do
                             STATUS=$(curl -s -L -o /dev/null -w "%{http_code}" --max-time 10 "$HEALTH_URL" 2>/dev/null || echo "000")
 
                             if [ "$STATUS" -ge 200 ] && [ "$STATUS" -lt 400 ]; then
-                              # App is up — check if it's a fresh deploy (new process)
-                              CURRENT_BODY=$(curl -s -L --max-time 10 "$HEALTH_URL" 2>/dev/null || echo "")
                               if [ $ELAPSED -ge 60 ]; then
                                 echo ""
                                 echo "✅ App is live (HTTP $STATUS) after ~${ELAPSED}s"
