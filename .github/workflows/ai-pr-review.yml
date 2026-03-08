@@ -31,15 +31,17 @@ jobs:
       - name: Get PR diff
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_BASE_REF: ${{ github.event.pull_request.base.ref }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
         run: |
           gh pr diff ${{ github.event.pull_request.number }} > /tmp/diff.txt 2>/dev/null || \
-            git diff origin/${{ github.event.pull_request.base.ref }}...HEAD > /tmp/diff.txt
+            git diff origin/"$PR_BASE_REF"...HEAD > /tmp/diff.txt
 
           # Truncate to stay within token limits
           head -c 6000 /tmp/diff.txt > /tmp/diff_trimmed.txt
 
           # Get PR info
-          echo "${{ github.event.pull_request.title }}" > /tmp/pr_title.txt
+          echo "$PR_TITLE" > /tmp/pr_title.txt
           echo "Files changed: $(wc -l < /tmp/diff.txt) diff lines" > /tmp/pr_meta.txt
 
       - name: Generate AI review
