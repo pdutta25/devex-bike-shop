@@ -18,6 +18,12 @@ A full-stack demo e-commerce application for a premium bike shop — built with 
 | **Charts** | Recharts |
 | **Validation** | Zod |
 | **Font** | Inter (Google Fonts) |
+| **Testing** | Vitest |
+| **Linting** | ESLint |
+| **Security Scanning** | Trivy + npm audit |
+| **Code Quality** | SonarCloud |
+| **CI** | GitHub Actions |
+| **CD** | Harness |
 
 ---
 
@@ -161,13 +167,80 @@ src/
 
 ---
 
+## Testing
+
+Unit tests are written with [Vitest](https://vitest.dev/) — 67 tests across 3 suites covering utilities, validation schemas, and application constants.
+
+```bash
+npm test            # Run all tests once
+npm run test:watch  # Run in watch mode during development
+```
+
+| Suite | Tests | Covers |
+|---|---|---|
+| `utils.test.ts` | 29 | `formatPrice`, `generateOrderNumber`, `slugify`, `generateSku`, `cn`, `randomBetween`, `pickRandom`, `shuffleArray` |
+| `validations.test.ts` | 24 | `customerSchema`, `checkoutSchema`, `productSchema`, `reviewSchema` — valid data, invalid data, edge cases |
+| `constants.test.ts` | 14 | Order statuses, payment statuses, fulfillment types, tax rate, shipping cost, categories, product specs |
+
+---
+
+## CI/CD Pipeline
+
+### GitHub Actions (CI)
+
+Every push and PR to `main` triggers a multi-stage CI pipeline with real tooling:
+
+```
+build ──┐
+lint  ──┤──→ security-scan ──┐
+test  ──┤──→ code-quality  ──┤──→ deploy-gate
+        └────────────────────┘
+```
+
+| Stage | Tool | Description |
+|---|---|---|
+| 🔨 **Build** | Next.js | Production build with artifact upload |
+| 📋 **Lint** | ESLint | Code linting (non-blocking) |
+| 🧪 **Test** | Vitest | 67 unit tests across utilities, validations, and constants |
+| 🛡️ **Security Scan** | Trivy + npm audit | Filesystem vulnerability scanning (CRITICAL/HIGH) and dependency audit |
+| 📊 **Code Quality** | SonarCloud | Static analysis, code smells, maintainability (non-blocking) |
+| 🚀 **Deploy Gate** | Harness webhook | Triggers CD pipeline on successful main builds |
+
+Additional CI workflows:
+- **AI PR Review** — Automated code review on pull requests using GitHub Copilot
+- **AI Release Notes** — Auto-generated release notes on tag pushes
+- **Auto Docs** — Generates API and schema documentation, publishes to GitHub Wiki (main branch only)
+
+Pipeline features:
+- **Path filtering** — Skips CI for markdown/docs-only changes
+- **Concurrency groups** — Cancels in-progress runs on rapid pushes
+- **Dependabot grouping** — Minor/patch npm updates and GitHub Actions updates are grouped into single PRs
+
+### Harness (CD)
+
+Continuous deployment via [Harness](https://harness.io/) with a three-stage pipeline:
+
+| Stage | Environment | Approval |
+|---|---|---|
+| **DEV** | Development | Auto-approved |
+| **SIT** | System Integration Testing | Auto-approved |
+| **PROD** | Production | Manual approval required |
+
+---
+
 ## Scripts
 
 ```bash
-npm run dev       # Start development server
-npm run build     # Production build
-npm run start     # Start production server
-npm run lint      # Run ESLint
+npm run dev         # Start development server
+npm run build       # Production build
+npm run start       # Start production server
+npm run lint        # Run ESLint
+npm test            # Run unit tests (Vitest)
+npm run test:watch  # Run tests in watch mode
+npm run db:push     # Push schema changes to SQLite
+npm run db:studio   # Open Drizzle Studio (DB browser)
+npm run docs        # Generate API & schema docs
+npm run docs:ai     # Generate AI-powered UX docs
 ```
 
 ---
