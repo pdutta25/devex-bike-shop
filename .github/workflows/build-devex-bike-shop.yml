@@ -238,7 +238,7 @@ jobs:
         if: (github.ref == 'refs/heads/main' && github.event_name == 'push') || inputs.test_deploy == true
         uses: actions/checkout@v4
 
-      - name: Create & Execute Harness CD Pipeline
+      - name: Deploy via Harness CD Pipeline
         if: (github.ref == 'refs/heads/main' && github.event_name == 'push') || inputs.test_deploy == true
         env:
           HARNESS_API_KEY: ${{ secrets.HARNESS_API_KEY }}
@@ -249,52 +249,69 @@ jobs:
           GIT_BRANCH: ${{ github.ref_name }}
           GIT_RUN: ${{ github.run_number }}
         run: |
+          PIPELINE_ID="deploydevexbikeshop"
           SHORT_SHA="${GIT_SHA:0:7}"
+          BASE_URL="https://app.harness.io/pipeline/api"
+          SCOPE="accountIdentifier=${HARNESS_ACCOUNT_ID}&orgIdentifier=${HARNESS_ORG_ID}&projectIdentifier=${HARNESS_PROJECT_ID}"
 
           # Extract PR number from merge commit message (e.g. "Merge pull request #42 from ...")
           PR_NUM=$(git log -1 --pretty=%s | grep -oP '#\K[0-9]+' || echo "")
+
+          # Build execution name for traceability
           if [ -n "$PR_NUM" ]; then
-            PIPELINE_ID="PR${PR_NUM}_deploy_${SHORT_SHA}_${GIT_RUN}"
-            PIPELINE_NAME="PR${PR_NUM}-deploy-${SHORT_SHA}-${GIT_RUN}"
+            EXEC_NAME="PR${PR_NUM}-${SHORT_SHA}-${GIT_RUN}"
           else
-            PIPELINE_ID="deploy_${SHORT_SHA}_${GIT_RUN}"
-            PIPELINE_NAME="deploy-${SHORT_SHA}-${GIT_RUN}"
+            EXEC_NAME="${SHORT_SHA}-${GIT_RUN}"
           fi
-          echo "🚀 Creating Harness pipeline: $PIPELINE_NAME"
 
-          # Read the template YAML and replace identifier + name
-          YAML=$(cat harness/deploy-devex-bike-shop.yaml \
-            | sed "s/identifier: deploydevexbikeshop/identifier: ${PIPELINE_ID}/" \
-            | sed "s/name: deploy-devex-bike-shop/name: ${PIPELINE_NAME}/")
-
-          # Step 1: Create the pipeline
-          echo ""
-          echo "📋 Creating pipeline..."
+          # Step 1: Ensure pipeline exists (create if missing, skip if exists)
+          echo "📋 Ensuring pipeline exists..."
+          YAML=$(cat harness/deploy-devex-bike-shop.yaml)
           CREATE_RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
-            "https://app.harness.io/pipeline/api/pipelines/v2?accountIdentifier=${HARNESS_ACCOUNT_ID}&orgIdentifier=${HARNESS_ORG_ID}&projectIdentifier=${HARNESS_PROJECT_ID}" \
+            "${BASE_URL}/pipelines/v2?${SCOPE}" \
             -H "Content-Type: application/yaml" \
             -H "x-api-key: ${HARNESS_API_KEY}" \
             -d "$YAML")
 
           CREATE_CODE=$(echo "$CREATE_RESPONSE" | tail -1)
-          CREATE_BODY=$(echo "$CREATE_RESPONSE" | head -n -1)
-
           if [ "$CREATE_CODE" -ge 200 ] && [ "$CREATE_CODE" -lt 300 ]; then
-            echo "✅ Pipeline created (HTTP $CREATE_CODE)"
+            echo "✅ Pipeline created"
+          elif [ "$CREATE_CODE" -eq 409 ]; then
+            echo "✅ Pipeline already exists"
           else
-            echo "❌ Failed to create pipeline (HTTP $CREATE_CODE)"
+            CREATE_BODY=$(echo "$CREATE_RESPONSE" | head -n -1)
+            echo "❌ Failed to ensure pipeline (HTTP $CREATE_CODE)"
             echo "   Response: $CREATE_BODY"
             exit 1
           fi
 
-          # Step 2: Execute the newly created pipeline
+          # Step 2: Execute pipeline with tags for traceability
           echo ""
-          echo "▶️  Executing pipeline..."
+          echo "▶️  Executing pipeline: $EXEC_NAME"
+          PAYLOAD=$(jq -n \
+            --arg name "$EXEC_NAME" \
+            --arg sha "$SHORT_SHA" \
+            --arg pr "${PR_NUM:-none}" \
+            --arg build "$GIT_RUN" \
+            --arg branch "$GIT_BRANCH" \
+            '{
+              pipeline: {
+                identifier: "deploydevexbikeshop",
+                tags: {
+                  commitSha: $sha,
+                  prNumber: $pr,
+                  buildNumber: $build,
+                  branch: $branch,
+                  executionName: $name
+                }
+              }
+            }')
+
           EXEC_RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
-            "https://app.harness.io/pipeline/api/pipeline/execute/${PIPELINE_ID}?accountIdentifier=${HARNESS_ACCOUNT_ID}&orgIdentifier=${HARNESS_ORG_ID}&projectIdentifier=${HARNESS_PROJECT_ID}" \
+            "${BASE_URL}/pipeline/execute/${PIPELINE_ID}?${SCOPE}" \
             -H "Content-Type: application/json" \
             -H "x-api-key: ${HARNESS_API_KEY}" \
-            -d "{\"pipeline\":{\"identifier\":\"${PIPELINE_ID}\"}}")
+            -d "$PAYLOAD")
 
           EXEC_CODE=$(echo "$EXEC_RESPONSE" | tail -1)
           EXEC_BODY=$(echo "$EXEC_RESPONSE" | head -n -1)
@@ -302,7 +319,9 @@ jobs:
           if [ "$EXEC_CODE" -ge 200 ] && [ "$EXEC_CODE" -lt 300 ]; then
             EXEC_ID=$(echo "$EXEC_BODY" | jq -r '.data.planExecution.uuid // "unknown"')
             echo "✅ Pipeline executing (HTTP $EXEC_CODE)"
-            echo "   Pipeline: $PIPELINE_NAME"
+            echo "   Execution: $EXEC_NAME"
+            echo "   PR: ${PR_NUM:-N/A}"
+            echo "   Commit: $SHORT_SHA"
             echo "   ID: $EXEC_ID"
           else
             echo "⚠️  Harness execute returned HTTP $EXEC_CODE (non-blocking)"
