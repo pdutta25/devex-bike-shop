@@ -230,52 +230,43 @@ jobs:
           HARNESS_ACCOUNT_ID: ${{ secrets.HARNESS_ACCOUNT_ID }}
           HARNESS_ORG_ID: ${{ secrets.HARNESS_ORG_ID }}
           HARNESS_PROJECT_ID: ${{ secrets.HARNESS_PROJECT_ID }}
+          GIT_SHA: ${{ github.sha }}
+          GIT_BRANCH: ${{ github.ref_name }}
+          GIT_RUN: ${{ github.run_number }}
         run: |
-          # Auto-generate a unique pipeline execution name
-          SHORT_SHA="${{ github.sha }}"
-          SHORT_SHA="${SHORT_SHA:0:7}"
-          EXEC_NAME="build-${SHORT_SHA}-${{ github.run_number }}"
-
+          SHORT_SHA="${GIT_SHA:0:7}"
+          EXEC_NAME="build-${SHORT_SHA}-${GIT_RUN}"
           echo "🚀 Triggering Harness pipeline: $EXEC_NAME"
+
+          PAYLOAD=$(jq -n \
+            --arg name "$EXEC_NAME" \
+            --arg branch "$GIT_BRANCH" \
+            --arg sha "$SHORT_SHA" \
+            --arg build "$GIT_RUN" \
+            '{
+              pipeline: {
+                identifier: "deploydevexbikeshop",
+                name: $name,
+                tags: {
+                  commitSha: $sha,
+                  buildNumber: $build,
+                  triggeredBy: "github-actions"
+                }
+              }
+            }')
 
           RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
             "https://app.harness.io/pipeline/api/pipeline/execute/deploydevexbikeshop?accountIdentifier=${HARNESS_ACCOUNT_ID}&orgIdentifier=${HARNESS_ORG_ID}&projectIdentifier=${HARNESS_PROJECT_ID}" \
-            -H "Content-Type: application/yaml" \
+            -H "Content-Type: application/json" \
             -H "x-api-key: ${HARNESS_API_KEY}" \
-            -d "pipeline:
-  identifier: deploydevexbikeshop
-  stages:
-    - stage:
-        identifier: dev
-        type: Approval
-        variables: []
-    - stage:
-        identifier: sit
-        type: Approval
-        variables: []
-    - stage:
-        identifier: prod
-        type: Approval
-        variables: []
-  properties:
-    ci:
-      codebase:
-        build:
-          spec:
-            branch: ${{ github.ref_name }}
-  tags:
-    commitSha: ${SHORT_SHA}
-    buildNumber: \"${{ github.run_number }}\"
-    triggeredBy: github-actions
-  name: ${EXEC_NAME}")
+            -d "$PAYLOAD")
 
           HTTP_CODE=$(echo "$RESPONSE" | tail -1)
           BODY=$(echo "$RESPONSE" | head -n -1)
-
           echo ""
           if [ "$HTTP_CODE" -ge 200 ] && [ "$HTTP_CODE" -lt 300 ]; then
             EXEC_ID=$(echo "$BODY" | jq -r '.data.planExecution.uuid // "unknown"')
-            echo "✅ Harness pipeline triggered successfully (HTTP $HTTP_CODE)"
+            echo "✅ Harness pipeline triggered (HTTP $HTTP_CODE)"
             echo "   Execution: $EXEC_NAME"
             echo "   ID: $EXEC_ID"
           else
