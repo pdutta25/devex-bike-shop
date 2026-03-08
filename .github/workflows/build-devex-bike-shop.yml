@@ -250,8 +250,16 @@ jobs:
           GIT_RUN: ${{ github.run_number }}
         run: |
           SHORT_SHA="${GIT_SHA:0:7}"
-          PIPELINE_ID="deploy-${SHORT_SHA}-${GIT_RUN}"
-          PIPELINE_NAME="deploy-${SHORT_SHA}-${GIT_RUN}"
+
+          # Extract PR number from merge commit message (e.g. "Merge pull request #42 from ...")
+          PR_NUM=$(git log -1 --pretty=%s | grep -oP '#\K[0-9]+' || echo "")
+          if [ -n "$PR_NUM" ]; then
+            PIPELINE_ID="PR${PR_NUM}_deploy_${SHORT_SHA}_${GIT_RUN}"
+            PIPELINE_NAME="PR${PR_NUM}-deploy-${SHORT_SHA}-${GIT_RUN}"
+          else
+            PIPELINE_ID="deploy_${SHORT_SHA}_${GIT_RUN}"
+            PIPELINE_NAME="deploy-${SHORT_SHA}-${GIT_RUN}"
+          fi
           echo "🚀 Creating Harness pipeline: $PIPELINE_NAME"
 
           # Read the template YAML and replace identifier + name
