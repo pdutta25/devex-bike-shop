@@ -29,29 +29,31 @@ jobs:
       - name: Get PR diff and commits
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_BASE_REF: ${{ github.event.pull_request.base.ref }}
         run: |
           # Get the diff
           gh pr diff ${{ github.event.pull_request.number }} > /tmp/diff.txt 2>/dev/null || \
-            git diff origin/${{ github.event.pull_request.base.ref }}...HEAD > /tmp/diff.txt
+            git diff origin/"$PR_BASE_REF"...HEAD > /tmp/diff.txt
 
           # Truncate diff to stay within token limits
           head -c 8000 /tmp/diff.txt > /tmp/diff_trimmed.txt
 
           # Get commit messages on this branch
-          git log origin/${{ github.event.pull_request.base.ref }}..HEAD --pretty=format:"- %s" > /tmp/commits.txt
+          git log origin/"$PR_BASE_REF"..HEAD --pretty=format:"- %s" > /tmp/commits.txt
 
           # Get list of changed files
           gh pr diff ${{ github.event.pull_request.number }} --name-only > /tmp/files.txt 2>/dev/null || \
-            git diff origin/${{ github.event.pull_request.base.ref }}...HEAD --name-only > /tmp/files.txt
+            git diff origin/"$PR_BASE_REF"...HEAD --name-only > /tmp/files.txt
 
       - name: Generate PR description
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
         run: |
           DIFF=$(cat /tmp/diff_trimmed.txt)
           COMMITS=$(cat /tmp/commits.txt)
           FILES=$(cat /tmp/files.txt)
-          TITLE="${{ github.event.pull_request.title }}"
+          TITLE="$PR_TITLE"
 
           PROMPT="Generate a PR description for this pull request.\n\nPR Title: $TITLE\n\nCommits:\n$COMMITS\n\nFiles changed:\n$FILES\n\nDiff:\n\`\`\`\n$DIFF\n\`\`\`"
 
