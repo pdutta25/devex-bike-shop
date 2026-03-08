@@ -564,6 +564,10 @@ pipeline:
                           echo "Build:  #<+trigger.payload.buildNumber>"
                           echo "Commit: <+trigger.payload.commitSha>"
                           echo ""
+
+                          APP_URL="<+secrets.getValue("render_app_url")>"
+                          HEALTH_URL="${APP_URL}/api/health"
+
                           # ── Trigger Render Deploy Hook ──
                           echo "🚀 Triggering Render deployment..."
                           RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" \
@@ -576,19 +580,67 @@ pipeline:
                             exit 1
                           fi
 
+                          # ── Wait for deploy to complete ──
+                          echo ""
+                          echo "⏳ Waiting for Render to build and deploy..."
+                          echo "─────────────────────────────────────"
+                          TIMEOUT=480
+                          INTERVAL=15
+                          ELAPSED=0
+                          WENT_DOWN=false
+
+                          while [ $ELAPSED -lt $TIMEOUT ]; do
+                            STATUS=$(curl -s -L -o /dev/null -w "%{http_code}" --max-time 10 "$HEALTH_URL" 2>/dev/null)
+
+                            if [ "$WENT_DOWN" = false ]; then
+                              if [ "$STATUS" -lt 200 ] || [ "$STATUS" -ge 400 ]; then
+                                WENT_DOWN=true
+                                echo "   [${ELAPSED}s] App is restarting (HTTP $STATUS)..."
+                              else
+                                echo "   [${ELAPSED}s] Waiting for deploy to start (HTTP $STATUS)..."
+                              fi
+                            else
+                              if [ "$STATUS" -ge 200 ] && [ "$STATUS" -lt 400 ]; then
+                                echo ""
+                                echo "✅ App is back online (HTTP $STATUS) after ~${ELAPSED}s"
+                                break
+                              else
+                                echo "   [${ELAPSED}s] Deploying... (HTTP $STATUS)"
+                              fi
+                            fi
+
+                            sleep $INTERVAL
+                            ELAPSED=$((ELAPSED + INTERVAL))
+                          done
+
+                          # If app never went down, give it extra time then verify
+                          if [ "$WENT_DOWN" = false ] && [ $ELAPSED -ge $TIMEOUT ]; then
+                            echo ""
+                            echo "⚠️  App never went offline — checking if deploy completed..."
+                            FINAL_STATUS=$(curl -s -L -o /dev/null -w "%{http_code}" --max-time 10 "$HEALTH_URL" 2>/dev/null)
+                            if [ "$FINAL_STATUS" -ge 200 ] && [ "$FINAL_STATUS" -lt 400 ]; then
+                              echo "✅ App is live (HTTP $FINAL_STATUS) — deploy may have completed"
+                            else
+                              echo "❌ App is not responding after ${TIMEOUT}s"
+                              exit 1
+                            fi
+                          elif [ $ELAPSED -ge $TIMEOUT ]; then
+                            echo ""
+                            echo "❌ Deploy did not complete within ${TIMEOUT}s"
+                            exit 1
+                          fi
+
                           echo ""
                           echo "┌──────────────────────────────────────┐"
-                          echo "│   PROD DEPLOYMENT TRIGGERED          │"
+                          echo "│   PROD DEPLOYMENT COMPLETE           │"
                           echo "├──────────────────────────────────────┤"
                           echo "│ Platform:     Render                 │"
-                          echo "│ Deploy Hook:  HTTP $RESPONSE         │"
-                          echo "│ Status:       ✅ TRIGGERED           │"
-                          echo "│ Note:         Render build in        │"
-                          echo "│               progress. Smoke tests  │"
-                          echo "│               will verify liveness.  │"
+                          echo "│ Deploy Time:  ~${ELAPSED}s           │"
+                          echo "│ Health:       $HEALTH_URL            │"
+                          echo "│ Status:       ✅ DEPLOYED            │"
                           echo "└──────────────────────────────────────┘"
                           echo ""
-                          echo "✅ Deploy triggered — smoke tests will verify app is live"
+                          echo "✅ Render deploy complete — proceeding to smoke tests"
 
               # ── Step 3: PROD Smoke Tests (Real) ──
               - step:

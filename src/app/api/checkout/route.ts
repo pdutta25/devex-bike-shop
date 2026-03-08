@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 import { NextRequest, NextResponse } from "next/server";
 import { db, sqlite } from "@/lib/db";
 import { orders, orderItems, cartItems, products, customers } from "@/lib/db/schema";

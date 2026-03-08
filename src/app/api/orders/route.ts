@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 import { NextRequest, NextResponse } from "next/server";
 import { getOrders } from "@/lib/queries/order-queries";
 import { getAuthenticatedCustomerId, isAdminAuthorized } from "@/lib/auth";
