@@ -9,8 +9,8 @@ pipeline:
     # STAGE 1: DEV - Deploy and Certify (Auto-Approved)
     # ════════════════════════════════════════════════════════════
     - stage:
-        name: DEV - Deploy and Certify
-        identifier: DEV_Deploy_and_Certify
+        name: DEV
+        identifier: DEV
         type: Custom
         failureStrategies:
           - onFailure:
@@ -268,8 +268,8 @@ pipeline:
     # STAGE 2: SIT - Deploy and Certify (Manual Gates)
     # ════════════════════════════════════════════════════════════
     - stage:
-        name: SIT - Deploy and Certify
-        identifier: SIT_Deploy_and_Certify
+        name: SIT
+        identifier: SIT
         type: Custom
         failureStrategies:
           - onFailure:
@@ -508,8 +508,8 @@ pipeline:
     # STAGE 3: PROD - Deploy and Certify (Manual + Real Deploy)
     # ════════════════════════════════════════════════════════════
     - stage:
-        name: PROD - Deploy and Certify
-        identifier: PROD_Deploy_and_Certify
+        name: PROD
+        identifier: PROD
         type: Custom
         failureStrategies:
           - onFailure:
