@@ -250,7 +250,7 @@ jobs:
           GIT_RUN: ${{ github.run_number }}
         run: |
           SHORT_SHA="${GIT_SHA:0:7}"
-          PIPELINE_ID="deploy-${SHORT_SHA}-${GIT_RUN}"
+          PIPELINE_ID="deploy_${SHORT_SHA}_${GIT_RUN}"
           PIPELINE_NAME="deploy-${SHORT_SHA}-${GIT_RUN}"
           echo "🚀 Creating Harness pipeline: $PIPELINE_NAME"
 
