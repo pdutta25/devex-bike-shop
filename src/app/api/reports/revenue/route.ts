@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 import { NextRequest, NextResponse } from "next/server";
 import { getRevenueOverTime } from "@/lib/queries/report-queries";
 import { isAdminAuthorized } from "@/lib/auth";
