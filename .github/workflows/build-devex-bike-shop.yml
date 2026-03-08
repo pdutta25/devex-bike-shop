@@ -16,6 +16,11 @@ on:
       - '.github/dependabot.yml'
       - 'LICENSE'
   workflow_dispatch:
+    inputs:
+      test_deploy:
+        description: 'Force deploy step (for testing)'
+        type: boolean
+        default: false
 
 # Cancel in-progress runs for the same branch (saves runner minutes on rapid pushes)
 concurrency:
@@ -224,7 +229,7 @@ jobs:
           echo "╚══════════════════════════════════════╝"
 
       - name: Trigger Harness CD Pipeline
-        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        if: (github.ref == 'refs/heads/main' && github.event_name == 'push') || inputs.test_deploy == true
         env:
           HARNESS_API_KEY: ${{ secrets.HARNESS_API_KEY }}
           HARNESS_ACCOUNT_ID: ${{ secrets.HARNESS_ACCOUNT_ID }}
