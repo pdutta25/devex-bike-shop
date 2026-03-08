@@ -45,3 +45,6 @@ slides/
 
 # generated docs (published to GitHub Wiki via CI)
 docs/
+
+# claude code (local config)
+.claude/

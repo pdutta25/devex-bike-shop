@@ -7,6 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
     "docs": "node scripts/generate-docs.mjs",
@@ -37,6 +39,8 @@
     "zod": "^3.24.0"
   },
   "devDependencies": {
-    "@types/bcryptjs": "^2.4.6"
+    "@types/bcryptjs": "^2.4.6",
+    "husky": "^9.1.7",
+    "vitest": "^4.0.18"
   }
 }

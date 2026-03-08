@@ -12,6 +12,13 @@ updates:
       - "dependencies"
     commit-message:
       prefix: "chore(deps):"
+    groups:
+      # Group all minor/patch updates into a single PR
+      npm-minor-patch:
+        update-types:
+          - "minor"
+          - "patch"
+      # Major versions get individual PRs for review
 
   - package-ecosystem: "github-actions"
     directory: "/"
@@ -24,3 +31,8 @@ updates:
       - "ci"
     commit-message:
       prefix: "chore(ci):"
+    groups:
+      # Group all GitHub Actions updates into one PR
+      actions-all:
+        patterns:
+          - "*"
