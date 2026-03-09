@@ -25,6 +25,14 @@ pipeline:
       type: String
       default: "GitHub Actions"
       value: <+input>
+    - name: repoUrl
+      type: String
+      default: "https://github.com/devx-bike-shop"
+      value: <+input>
+    - name: runId
+      type: String
+      default: "0"
+      value: <+input>
   stages:
     # ════════════════════════════════════════════════════════════
     # STAGE 1: DEV - Deploy and Certify (Auto-Approved)
@@ -205,6 +213,8 @@ pipeline:
                           echo "├──────────────────────────────────────┤"
                           echo "│ Result:  ✅ DEV PASSED               │"
                           echo "└──────────────────────────────────────┘"
+                          echo ""
+                          echo "🔗 Trace: <+pipeline.variables.repoUrl>/commit/<+pipeline.variables.commitSha>"
                           echo ""
         tags: {}
 
@@ -484,6 +494,8 @@ pipeline:
                           echo "├──────────────────────────────────────┤"
                           echo "│ Result:  ✅ SIT PASSED               │"
                           echo "└──────────────────────────────────────┘"
+                          echo ""
+                          echo "🔗 Trace: <+pipeline.variables.repoUrl>/commit/<+pipeline.variables.commitSha>"
                           echo ""
         tags: {}
 
@@ -787,8 +799,60 @@ pipeline:
                           echo "║                                                      ║"
                           echo "║  🎉 ALL STAGES PASSED — RELEASE COMPLETE             ║"
                           echo "║                                                      ║"
-                          echo "║  App: <+secrets.getValue("render_app_url")>           ║"
+                          echo "║  App: https://www.devexbikeshop.com                   ║"
                           echo "║                                                      ║"
                           echo "╚══════════════════════════════════════════════════════╝"
+                          echo ""
+                          echo ""
+                          echo "  🔗 END-TO-END TRACEABILITY REPORT"
+                          echo "  ════════════════════════════════════════"
+                          echo ""
+                          echo "  The same commit SHA flows through every system:"
+                          echo ""
+                          echo "    GitHub ──→ AI Review ──→ CI ──→ Release ──→ CD ──→ Production"
+                          echo "      <+pipeline.variables.commitSha>      <+pipeline.variables.commitSha>    <+pipeline.variables.commitSha>    <+pipeline.variables.commitSha>"
+                          echo ""
+                          echo ""
+                          echo "  📍 TRACE LINKS"
+                          echo "  ────────────────────────────────────────"
+                          echo ""
+                          echo "  GitHub Commit:"
+                          echo "    <+pipeline.variables.repoUrl>/commit/<+pipeline.variables.commitSha>"
+                          echo ""
+                          echo "  GitHub Actions (CI) — Run #<+pipeline.variables.buildNumber>:"
+                          echo "    <+pipeline.variables.repoUrl>/actions/runs/<+pipeline.variables.runId>"
+                          echo ""
+                          echo "  AI Code Review / PR Description:"
+                          echo "    <+pipeline.variables.repoUrl>/pull/<+pipeline.variables.prNumber>"
+                          echo ""
+                          echo "  Harness (CD) — This Pipeline:"
+                          echo "    https://app.harness.io/ng/account/<+account.identifier>/home/orgs/<+org.identifier>/projects/<+project.identifier>/pipelines/<+pipeline.identifier>/executions/<+pipeline.executionId>/pipeline"
+                          echo ""
+                          echo "  GitHub Release:"
+                          echo "    <+pipeline.variables.repoUrl>/releases/tag/v1.0.<+pipeline.variables.buildNumber>"
+                          echo ""
+                          echo "  Live App (Production):"
+                          echo "    https://www.devexbikeshop.com"
+                          echo ""
+                          echo ""
+                          echo "  📊 DATA LINEAGE"
+                          echo "  ────────────────────────────────────────"
+                          echo ""
+                          echo "  Commit <+pipeline.variables.commitSha> on branch <+pipeline.variables.branch>"
+                          echo "    ↓"
+                          echo "  AI Code Review / PR Description"
+                          echo "    ↓"
+                          echo "  CI — GitHub Actions (Run #<+pipeline.variables.buildNumber>)"
+                          echo "    Build ✔  Lint ✔  Test ✔  Security ✔  Quality ✔"
+                          echo "    ↓"
+                          echo "  Release — v1.0.<+pipeline.variables.buildNumber>"
+                          echo "    ↓"
+                          echo "  CD — Harness Pipeline"
+                          echo "    DEV   ✔  Provision → Deploy → Smoke Tests"
+                          echo "    SIT   ✔  Deploy → Smoke + Integration Tests"
+                          echo "    PROD  ✔  Render Deploy → Live Smoke Tests"
+                          echo "    ↓"
+                          echo "  Production"
+                          echo "    https://www.devexbikeshop.com"
                           echo ""
         tags: {}
