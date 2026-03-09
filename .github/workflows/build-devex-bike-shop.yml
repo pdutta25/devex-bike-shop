@@ -248,6 +248,8 @@ jobs:
           GIT_SHA: ${{ github.sha }}
           GIT_BRANCH: ${{ github.ref_name }}
           GIT_RUN: ${{ github.run_number }}
+          GIT_RUN_ID: ${{ github.run_id }}
+          REPO_URL: ${{ github.server_url }}/${{ github.repository }}
         run: |
           PIPELINE_ID="deploydevexbikeshop"
           SHORT_SHA="${GIT_SHA:0:7}"
@@ -294,6 +296,8 @@ jobs:
             --arg pr "${PR_NUM:-none}" \
             --arg build "$GIT_RUN" \
             --arg branch "$GIT_BRANCH" \
+            --arg repo "$REPO_URL" \
+            --arg runid "$GIT_RUN_ID" \
             '{
               notesForPipelineExecution: ("Triggered by GitHub Actions | Run #" + $build + " | Branch: " + $branch + " | Commit: " + $sha),
               pipeline: {
@@ -310,7 +314,9 @@ jobs:
                   { name: "buildNumber", type: "String", value: $build },
                   { name: "branch", type: "String", value: $branch },
                   { name: "prNumber", type: "String", value: $pr },
-                  { name: "triggeredBy", type: "String", value: "GitHub Actions" }
+                  { name: "triggeredBy", type: "String", value: "GitHub Actions" },
+                  { name: "repoUrl", type: "String", value: $repo },
+                  { name: "runId", type: "String", value: $runid }
                 ]
               }
             }')
