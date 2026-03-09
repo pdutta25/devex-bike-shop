@@ -276,7 +276,7 @@ jobs:
           CREATE_CODE=$(echo "$CREATE_RESPONSE" | tail -1)
           if [ "$CREATE_CODE" -ge 200 ] && [ "$CREATE_CODE" -lt 300 ]; then
             echo "✅ Pipeline created"
-          elif [ "$CREATE_CODE" -eq 409 ]; then
+          elif [ "$CREATE_CODE" -eq 409 ] || ([ "$CREATE_CODE" -eq 400 ] && echo "$CREATE_RESPONSE" | grep -q "DUPLICATE_FIELD"); then
             echo "✅ Pipeline already exists"
           else
             CREATE_BODY=$(echo "$CREATE_RESPONSE" | head -n -1)
