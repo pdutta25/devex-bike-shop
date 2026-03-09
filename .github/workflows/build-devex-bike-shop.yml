@@ -303,7 +303,13 @@ jobs:
                   buildNumber: $build,
                   branch: $branch,
                   executionName: $name
-                }
+                },
+                variables: [
+                  { name: "commitSha", type: "String", value: $sha },
+                  { name: "buildNumber", type: "String", value: $build },
+                  { name: "branch", type: "String", value: $branch },
+                  { name: "prNumber", type: "String", value: $pr }
+                ]
               }
             }')
 

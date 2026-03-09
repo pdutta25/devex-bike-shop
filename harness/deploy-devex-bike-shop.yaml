@@ -4,6 +4,23 @@ pipeline:
   projectIdentifier: devexbikeshop
   orgIdentifier: default
   tags: {}
+  variables:
+    - name: commitSha
+      type: String
+      default: "unknown"
+      value: <+input>
+    - name: buildNumber
+      type: String
+      default: "0"
+      value: <+input>
+    - name: branch
+      type: String
+      default: "main"
+      value: <+input>
+    - name: prNumber
+      type: String
+      default: "none"
+      value: <+input>
   stages:
     # ════════════════════════════════════════════════════════════
     # STAGE 1: DEV - Deploy and Certify (Auto-Approved)
@@ -67,7 +84,7 @@ pipeline:
                         script: |-
                           #!/bin/bash
                           echo "🚀 Deploying to DEV (dev.bikeshop.internal)"
-                          echo "   Build: #<+trigger.payload.buildNumber> | Commit: <+trigger.payload.commitSha>"
+                          echo "   Build: #<+pipeline.variables.buildNumber> | Commit: <+pipeline.variables.commitSha>"
                           sleep 2
                           echo "   Pulling artifact... ✔"
                           sleep 2
@@ -118,7 +135,7 @@ pipeline:
                       ✅ AUTO-CERTIFY: DEV Build
                       DEV deployment and smoke tests passed (11/11).
                       Auto-certifying to proceed to SIT.
-                      Build: #<+trigger.payload.buildNumber>
+                      Build: #<+pipeline.variables.buildNumber>
                     includePipelineExecutionHistory: true
                     approvers:
                       userGroups:
@@ -151,8 +168,8 @@ pipeline:
                           echo "┌──────────────────────────────────────┐"
                           echo "│     DEV STAGE SUMMARY                │"
                           echo "├──────────────────────────────────────┤"
-                          echo "│ Build:   #<+trigger.payload.buildNumber>  │"
-                          echo "│ Commit:  <+trigger.payload.commitSha>     │"
+                          echo "│ Build:   #<+pipeline.variables.buildNumber>  │"
+                          echo "│ Commit:  <+pipeline.variables.commitSha>     │"
                           echo "├──────────────────────────────────────┤"
                           echo "│ ✅ Infrastructure Provisioned        │"
                           echo "│ ✅ Application Deployed              │"
@@ -195,7 +212,7 @@ pipeline:
                         script: |-
                           #!/bin/bash
                           echo "🚀 Deploying to SIT (sit.bikeshop.internal)"
-                          echo "   Build: #<+trigger.payload.buildNumber> | Commit: <+trigger.payload.commitSha>"
+                          echo "   Build: #<+pipeline.variables.buildNumber> | Commit: <+pipeline.variables.commitSha>"
                           sleep 2
                           echo "   Pulling artifact... ✔"
                           sleep 2
@@ -282,8 +299,8 @@ pipeline:
                          ✅ Integration Tests: 15/15 passed
                          ✅ Performance Tests: 5/5 passed
                       Auto-certifying to proceed to PROD.
-                      Build:  #<+trigger.payload.buildNumber>
-                      Commit: <+trigger.payload.commitSha>
+                      Build:  #<+pipeline.variables.buildNumber>
+                      Commit: <+pipeline.variables.commitSha>
                     includePipelineExecutionHistory: true
                     approvers:
                       userGroups:
@@ -316,8 +333,8 @@ pipeline:
                           echo "┌──────────────────────────────────────┐"
                           echo "│     SIT STAGE SUMMARY                │"
                           echo "├──────────────────────────────────────┤"
-                          echo "│ Build:   #<+trigger.payload.buildNumber>  │"
-                          echo "│ Commit:  <+trigger.payload.commitSha>     │"
+                          echo "│ Build:   #<+pipeline.variables.buildNumber>  │"
+                          echo "│ Commit:  <+pipeline.variables.commitSha>     │"
                           echo "├──────────────────────────────────────┤"
                           echo "│ ✅ Application Deployed              │"
                           echo "│ ✅ Smoke Tests Passed (11/11)        │"
@@ -355,8 +372,8 @@ pipeline:
                   spec:
                     approvalMessage: |-
                       ✅ AUTO-APPROVE: Deploy to PROD
-                      Build #<+trigger.payload.buildNumber> certified in DEV and SIT.
-                      Commit: <+trigger.payload.commitSha>
+                      Build #<+pipeline.variables.buildNumber> certified in DEV and SIT.
+                      Commit: <+pipeline.variables.commitSha>
                       Auto-approving to proceed with PROD deployment.
                     includePipelineExecutionHistory: true
                     approvers:
@@ -390,8 +407,8 @@ pipeline:
                           echo "║  DEPLOYING TO PROD — RENDER          ║"
                           echo "╚══════════════════════════════════════╝"
                           echo ""
-                          echo "Build:  #<+trigger.payload.buildNumber>"
-                          echo "Commit: <+trigger.payload.commitSha>"
+                          echo "Build:  #<+pipeline.variables.buildNumber>"
+                          echo "Commit: <+pipeline.variables.commitSha>"
                           echo ""
 
                           APP_URL="<+secrets.getValue("render_app_url")>"
@@ -576,8 +593,8 @@ pipeline:
                     approvalMessage: |-
                       ✅ AUTO-CERTIFY: PROD Build — Final Sign-Off
                       🎉 Production deployment successful!
-                      Build:  #<+trigger.payload.buildNumber>
-                      Commit: <+trigger.payload.commitSha>
+                      Build:  #<+pipeline.variables.buildNumber>
+                      Commit: <+pipeline.variables.commitSha>
                       App:    <+secrets.getValue("render_app_url")>
                       Auto-certifying to complete the release.
                     includePipelineExecutionHistory: true
@@ -613,9 +630,9 @@ pipeline:
                           echo "║          PIPELINE EXECUTION SUMMARY                  ║"
                           echo "╠══════════════════════════════════════════════════════╣"
                           echo "║                                                      ║"
-                          echo "║  Build:   #<+trigger.payload.buildNumber>             ║"
-                          echo "║  Commit:  <+trigger.payload.commitSha>               ║"
-                          echo "║  Branch:  <+trigger.payload.branch>                  ║"
+                          echo "║  Build:   #<+pipeline.variables.buildNumber>             ║"
+                          echo "║  Commit:  <+pipeline.variables.commitSha>               ║"
+                          echo "║  Branch:  <+pipeline.variables.branch>                  ║"
                           echo "║                                                      ║"
                           echo "╠══════════════════════════════════════════════════════╣"
                           echo "║  STAGE         STATUS                                ║"
