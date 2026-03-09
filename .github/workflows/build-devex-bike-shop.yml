@@ -295,6 +295,7 @@ jobs:
             --arg build "$GIT_RUN" \
             --arg branch "$GIT_BRANCH" \
             '{
+              notesForPipelineExecution: ("Triggered by GitHub Actions | Run #" + $build + " | Branch: " + $branch + " | Commit: " + $sha),
               pipeline: {
                 identifier: "deploydevexbikeshop",
                 tags: {
@@ -308,7 +309,8 @@ jobs:
                   { name: "commitSha", type: "String", value: $sha },
                   { name: "buildNumber", type: "String", value: $build },
                   { name: "branch", type: "String", value: $branch },
-                  { name: "prNumber", type: "String", value: $pr }
+                  { name: "prNumber", type: "String", value: $pr },
+                  { name: "triggeredBy", type: "String", value: "GitHub Actions" }
                 ]
               }
             }')
