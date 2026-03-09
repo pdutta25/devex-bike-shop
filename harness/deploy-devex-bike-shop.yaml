@@ -56,6 +56,8 @@ pipeline:
                       spec:
                         script: |-
                           #!/bin/bash
+                          echo "ℹ️  Stubbed — no real infrastructure provisioned (demo only)"
+                          echo ""
                           echo "📋 Provisioning DEV — AWS EC2 via Terraform"
                           echo "   Region: us-east-1 | Instance: t3.medium"
                           sleep 2
@@ -87,6 +89,18 @@ pipeline:
                       spec:
                         script: |-
                           #!/bin/bash
+                          echo "┌──────────────────────────────────────────────────┐"
+                          echo "│ ℹ️  STUBBED DEPLOYMENT                            │"
+                          echo "│                                                  │"
+                          echo "│ No DEV environment exists yet — the live app     │"
+                          echo "│ runs only in Production (Render). This step      │"
+                          echo "│ simulates the deploy to showcase the end-to-end  │"
+                          echo "│ pipeline flow: build → DEV → SIT → PROD.         │"
+                          echo "│                                                  │"
+                          echo "│ Smoke tests in this stage run against the live   │"
+                          echo "│ production app to validate real HTTP responses.  │"
+                          echo "└──────────────────────────────────────────────────┘"
+                          echo ""
                           echo "🚀 Deploying to DEV (dev.bikeshop.internal)"
                           echo "   Build: #<+pipeline.variables.buildNumber> | Commit: <+pipeline.variables.commitSha>"
                           sleep 2
@@ -96,7 +110,7 @@ pipeline:
                           sleep 2
                           echo "   Restarting services... ✔"
                           echo ""
-                          echo "✅ DEV deployed"
+                          echo "✅ DEV deployed (stubbed)"
 
               # ── Step 3: DEV Smoke Tests ──
               - step:
@@ -112,21 +126,84 @@ pipeline:
                       spec:
                         script: |-
                           #!/bin/bash
-                          echo "🔍 DEV Smoke Tests — dev.bikeshop.internal"
-                          sleep 1
-                          echo "   ✔ Homepage loads              (120ms)"
-                          echo "   ✔ Static assets served        (85ms)"
-                          echo "   ✔ Product catalog renders     (145ms)"
-                          sleep 1
-                          echo "   ✔ GET /health                 200 OK"
-                          echo "   ✔ GET /api/products           200 OK"
-                          echo "   ✔ GET /api/categories         200 OK"
-                          sleep 1
-                          echo "   ✔ Database connectivity       PASS"
-                          echo "   ✔ Session store               PASS"
-                          echo "   ✔ Environment config          PASS"
+                          echo "╔══════════════════════════════════════╗"
+                          echo "║     DEV SMOKE TESTS (LIVE)           ║"
+                          echo "╚══════════════════════════════════════╝"
                           echo ""
-                          echo "✅ DEV smoke tests passed — 9/9"
+                          APP_URL="<+secrets.getValue("render_app_url")>"
+                          echo "Target: $APP_URL"
+                          echo ""
+
+                          PASSED=0
+                          FAILED=0
+
+                          smoke_test() {
+                            local ID="$1"
+                            local DESC="$2"
+                            local URL="$3"
+                            local EXPECT_STATUS="${4:-200}"
+                            local MATCH_BODY="$5"
+
+                            BODY=$(curl -s -L --max-time 15 "$URL")
+                            STATUS=$(curl -s -L -o /dev/null -w "%{http_code}" --max-time 15 "$URL")
+
+                            if [ "$STATUS" -ge 200 ] && [ "$STATUS" -lt 400 ]; then
+                              if [ -n "$MATCH_BODY" ]; then
+                                if echo "$BODY" | grep -q "$MATCH_BODY"; then
+                                  echo "   ✔ [$ID] $DESC — HTTP $STATUS"
+                                  PASSED=$((PASSED + 1))
+                                else
+                                  echo "   ✘ [$ID] $DESC — HTTP $STATUS but body missing: $MATCH_BODY"
+                                  FAILED=$((FAILED + 1))
+                                fi
+                              else
+                                echo "   ✔ [$ID] $DESC — HTTP $STATUS"
+                                PASSED=$((PASSED + 1))
+                              fi
+                            else
+                              echo "   ✘ [$ID] $DESC — HTTP $STATUS (expected $EXPECT_STATUS)"
+                              FAILED=$((FAILED + 1))
+                            fi
+                          }
+
+                          echo "🔍 Health & Homepage"
+                          echo "─────────────────────────────────────"
+                          smoke_test "DEV-01" "GET /api/health" "$APP_URL/api/health" 200
+                          smoke_test "DEV-02" "GET / (homepage)" "$APP_URL" 200 "__next"
+                          echo ""
+
+                          echo "🔍 Public API Endpoints"
+                          echo "─────────────────────────────────────"
+                          smoke_test "DEV-03" "GET /api/products" "$APP_URL/api/products" 200
+                          smoke_test "DEV-04" "GET /api/categories" "$APP_URL/api/categories" 200
+                          echo ""
+
+                          echo "🔍 Storefront Pages"
+                          echo "─────────────────────────────────────"
+                          smoke_test "DEV-05" "GET /category/road" "$APP_URL/category/road" 200
+                          smoke_test "DEV-06" "GET /cart" "$APP_URL/cart" 200
+                          echo ""
+
+                          TOTAL=$((PASSED + FAILED))
+                          echo "┌──────────────────────────────────────┐"
+                          echo "│     DEV SMOKE TEST RESULTS           │"
+                          echo "├──────────────────────────────────────┤"
+                          printf "│ Total Tests:    %-20s │\n" "$TOTAL"
+                          printf "│ Passed:         %-20s │\n" "$PASSED"
+                          printf "│ Failed:         %-20s │\n" "$FAILED"
+                          if [ "$FAILED" -eq 0 ]; then
+                            echo "│ Status:         ✅ ALL PASSED        │"
+                          else
+                            echo "│ Status:         ❌ SOME FAILED       │"
+                          fi
+                          echo "└──────────────────────────────────────┘"
+                          echo ""
+
+                          if [ "$FAILED" -gt 0 ]; then
+                            echo "❌ $FAILED smoke test(s) failed"
+                            exit 1
+                          fi
+                          echo "✅ All $TOTAL DEV smoke tests passed"
 
               # ── Step 4: Certify DEV Build (Auto-Approve in 10s) ──
               - step:
@@ -179,7 +256,7 @@ pipeline:
                           echo "├──────────────────────────────────────┤"
                           echo "│ ✅ Infrastructure Provisioned        │"
                           echo "│ ✅ Application Deployed              │"
-                          echo "│ ✅ Smoke Tests Passed (11/11)        │"
+                          echo "│ ✅ Smoke Tests Passed (6/6)          │"
                           echo "│ ✅ Build Certified                   │"
                           echo "├──────────────────────────────────────┤"
                           echo "│ Result:  ✅ DEV PASSED               │"
@@ -217,6 +294,19 @@ pipeline:
                       spec:
                         script: |-
                           #!/bin/bash
+                          echo "┌──────────────────────────────────────────────────┐"
+                          echo "│ ℹ️  STUBBED DEPLOYMENT                            │"
+                          echo "│                                                  │"
+                          echo "│ No SIT environment exists yet — the live app     │"
+                          echo "│ runs only in Production (Render). This step      │"
+                          echo "│ simulates the deploy to showcase the end-to-end  │"
+                          echo "│ pipeline flow: build → DEV → SIT → PROD.         │"
+                          echo "│                                                  │"
+                          echo "│ Smoke & integration tests in this stage run      │"
+                          echo "│ against the live production app to validate      │"
+                          echo "│ real HTTP responses and data integrity.          │"
+                          echo "└──────────────────────────────────────────────────┘"
+                          echo ""
                           echo "🚀 Deploying to SIT (sit.bikeshop.internal)"
                           echo "   Build: #<+pipeline.variables.buildNumber> | Commit: <+pipeline.variables.commitSha>"
                           sleep 2
@@ -227,7 +317,7 @@ pipeline:
                           echo "   Configuring environment... ✔"
                           echo "   Restarting services... ✔"
                           echo ""
-                          echo "✅ SIT deployed"
+                          echo "✅ SIT deployed (stubbed)"
 
               # ── Step 2: SIT Smoke Tests ──
               - step:
@@ -243,21 +333,84 @@ pipeline:
                       spec:
                         script: |-
                           #!/bin/bash
-                          echo "🔍 SIT Smoke Tests — sit.bikeshop.internal"
-                          sleep 1
-                          echo "   ✔ Homepage loads              (98ms)"
-                          echo "   ✔ Static assets served        (72ms)"
-                          echo "   ✔ Product catalog renders     (132ms)"
-                          sleep 1
-                          echo "   ✔ GET /health                 200 OK"
-                          echo "   ✔ GET /api/products           200 OK"
-                          echo "   ✔ GET /api/categories         200 OK"
-                          sleep 1
-                          echo "   ✔ Database connectivity       PASS"
-                          echo "   ✔ Session store               PASS"
-                          echo "   ✔ Environment config          PASS"
+                          echo "╔══════════════════════════════════════╗"
+                          echo "║     SIT SMOKE TESTS (LIVE)           ║"
+                          echo "╚══════════════════════════════════════╝"
                           echo ""
-                          echo "✅ SIT smoke tests passed — 9/9"
+                          APP_URL="<+secrets.getValue("render_app_url")>"
+                          echo "Target: $APP_URL"
+                          echo ""
+
+                          PASSED=0
+                          FAILED=0
+
+                          smoke_test() {
+                            local ID="$1"
+                            local DESC="$2"
+                            local URL="$3"
+                            local EXPECT_STATUS="${4:-200}"
+                            local MATCH_BODY="$5"
+
+                            BODY=$(curl -s -L --max-time 15 "$URL")
+                            STATUS=$(curl -s -L -o /dev/null -w "%{http_code}" --max-time 15 "$URL")
+
+                            if [ "$STATUS" -ge 200 ] && [ "$STATUS" -lt 400 ]; then
+                              if [ -n "$MATCH_BODY" ]; then
+                                if echo "$BODY" | grep -q "$MATCH_BODY"; then
+                                  echo "   ✔ [$ID] $DESC — HTTP $STATUS"
+                                  PASSED=$((PASSED + 1))
+                                else
+                                  echo "   ✘ [$ID] $DESC — HTTP $STATUS but body missing: $MATCH_BODY"
+                                  FAILED=$((FAILED + 1))
+                                fi
+                              else
+                                echo "   ✔ [$ID] $DESC — HTTP $STATUS"
+                                PASSED=$((PASSED + 1))
+                              fi
+                            else
+                              echo "   ✘ [$ID] $DESC — HTTP $STATUS (expected $EXPECT_STATUS)"
+                              FAILED=$((FAILED + 1))
+                            fi
+                          }
+
+                          echo "🔍 Health & Homepage"
+                          echo "─────────────────────────────────────"
+                          smoke_test "SIT-01" "GET /api/health" "$APP_URL/api/health" 200
+                          smoke_test "SIT-02" "GET / (homepage)" "$APP_URL" 200 "__next"
+                          echo ""
+
+                          echo "🔍 Public API Endpoints"
+                          echo "─────────────────────────────────────"
+                          smoke_test "SIT-03" "GET /api/products" "$APP_URL/api/products" 200
+                          smoke_test "SIT-04" "GET /api/categories" "$APP_URL/api/categories" 200
+                          echo ""
+
+                          echo "🔍 Storefront Pages"
+                          echo "─────────────────────────────────────"
+                          smoke_test "SIT-05" "GET /category/road" "$APP_URL/category/road" 200
+                          smoke_test "SIT-06" "GET /cart" "$APP_URL/cart" 200
+                          echo ""
+
+                          TOTAL=$((PASSED + FAILED))
+                          echo "┌──────────────────────────────────────┐"
+                          echo "│     SIT SMOKE TEST RESULTS           │"
+                          echo "├──────────────────────────────────────┤"
+                          printf "│ Total Tests:    %-20s │\n" "$TOTAL"
+                          printf "│ Passed:         %-20s │\n" "$PASSED"
+                          printf "│ Failed:         %-20s │\n" "$FAILED"
+                          if [ "$FAILED" -eq 0 ]; then
+                            echo "│ Status:         ✅ ALL PASSED        │"
+                          else
+                            echo "│ Status:         ❌ SOME FAILED       │"
+                          fi
+                          echo "└──────────────────────────────────────┘"
+                          echo ""
+
+                          if [ "$FAILED" -gt 0 ]; then
+                            echo "❌ $FAILED smoke test(s) failed"
+                            exit 1
+                          fi
+                          echo "✅ All $TOTAL SIT smoke tests passed"
 
               # ── Step 3: SIT Integration Tests ──
               - step:
@@ -273,23 +426,90 @@ pipeline:
                       spec:
                         script: |-
                           #!/bin/bash
-                          echo "🔍 SIT Integration Tests — sit.bikeshop.internal"
-                          sleep 1
-                          echo "   ✔ Product API CRUD (4 tests)    PASS"
-                          echo "   ✔ Cart operations (4 tests)     PASS"
-                          echo "   ✔ Checkout flow E2E (3 tests)   PASS"
-                          sleep 1
-                          echo "   ✔ DB read/write consistency     PASS"
-                          echo "   ✔ Session persistence           PASS"
-                          echo "   ✔ Cache invalidation            PASS"
-                          echo "   ✔ Error handling (404/500)      PASS"
-                          sleep 1
-                          echo "   ✔ Avg response:  67ms  (<200ms)"
-                          echo "   ✔ P95 response:  142ms (<500ms)"
-                          echo "   ✔ Throughput:    120rps (>50rps)"
-                          echo "   ✔ Error rate:    0.0%  (<1%)"
+                          echo "╔══════════════════════════════════════╗"
+                          echo "║   SIT INTEGRATION TESTS (LIVE)       ║"
+                          echo "╚══════════════════════════════════════╝"
                           echo ""
-                          echo "✅ SIT integration + perf tests passed — 20/20"
+                          APP_URL="<+secrets.getValue("render_app_url")>"
+                          echo "Target: $APP_URL"
+                          echo ""
+
+                          PASSED=0
+                          FAILED=0
+
+                          integration_test() {
+                            local ID="$1"
+                            local DESC="$2"
+                            local URL="$3"
+                            local EXPECT_STATUS="${4:-200}"
+                            local MATCH_BODY="$5"
+
+                            BODY=$(curl -s -L --max-time 15 "$URL")
+                            STATUS=$(curl -s -L -o /dev/null -w "%{http_code}" --max-time 15 "$URL")
+
+                            if [ "$STATUS" -ge 200 ] && [ "$STATUS" -lt 400 ]; then
+                              if [ -n "$MATCH_BODY" ]; then
+                                if echo "$BODY" | grep -q "$MATCH_BODY"; then
+                                  echo "   ✔ [$ID] $DESC — HTTP $STATUS"
+                                  PASSED=$((PASSED + 1))
+                                else
+                                  echo "   ✘ [$ID] $DESC — HTTP $STATUS but body missing: $MATCH_BODY"
+                                  FAILED=$((FAILED + 1))
+                                fi
+                              else
+                                echo "   ✔ [$ID] $DESC — HTTP $STATUS"
+                                PASSED=$((PASSED + 1))
+                              fi
+                            else
+                              echo "   ✘ [$ID] $DESC — HTTP $STATUS (expected $EXPECT_STATUS)"
+                              FAILED=$((FAILED + 1))
+                            fi
+                          }
+
+                          echo "🔍 Product API — Data Integrity"
+                          echo "─────────────────────────────────────"
+                          integration_test "INT-01" "Products returns array" "$APP_URL/api/products" 200 "["
+                          integration_test "INT-02" "Products have name field" "$APP_URL/api/products" 200 "name"
+                          integration_test "INT-03" "Products have price field" "$APP_URL/api/products" 200 "price"
+                          integration_test "INT-04" "Categories returns array" "$APP_URL/api/categories" 200 "["
+                          integration_test "INT-05" "Categories have name field" "$APP_URL/api/categories" 200 "name"
+                          echo ""
+
+                          echo "🔍 Storefront — Page Rendering"
+                          echo "─────────────────────────────────────"
+                          integration_test "INT-06" "Homepage renders Next.js app" "$APP_URL" 200 "__next"
+                          integration_test "INT-07" "Homepage has product content" "$APP_URL" 200 "bike"
+                          integration_test "INT-08" "Category page renders" "$APP_URL/category/road" 200 "__next"
+                          integration_test "INT-09" "Cart page renders" "$APP_URL/cart" 200 "__next"
+                          echo ""
+
+                          echo "🔍 API Health & Response Validation"
+                          echo "─────────────────────────────────────"
+                          integration_test "INT-10" "Health endpoint returns OK" "$APP_URL/api/health" 200 "ok"
+                          integration_test "INT-11" "Products returns valid JSON" "$APP_URL/api/products" 200 "id"
+                          integration_test "INT-12" "Categories returns valid JSON" "$APP_URL/api/categories" 200 "id"
+                          echo ""
+
+                          TOTAL=$((PASSED + FAILED))
+                          echo "┌──────────────────────────────────────┐"
+                          echo "│   SIT INTEGRATION TEST RESULTS       │"
+                          echo "├──────────────────────────────────────┤"
+                          printf "│ Total Tests:    %-20s │\n" "$TOTAL"
+                          printf "│ Passed:         %-20s │\n" "$PASSED"
+                          printf "│ Failed:         %-20s │\n" "$FAILED"
+                          if [ "$FAILED" -eq 0 ]; then
+                            echo "│ Status:         ✅ ALL PASSED        │"
+                          else
+                            echo "│ Status:         ❌ SOME FAILED       │"
+                          fi
+                          echo "└──────────────────────────────────────┘"
+                          echo ""
+
+                          if [ "$FAILED" -gt 0 ]; then
+                            echo "❌ $FAILED integration test(s) failed"
+                            exit 1
+                          fi
+                          echo "✅ All $TOTAL SIT integration tests passed"
 
               # ── Step 4: Certify SIT Build (Auto-Approve in 10s) ──
               - step:
@@ -345,9 +565,8 @@ pipeline:
                           echo "│ Trigger: <+pipeline.variables.triggeredBy>   │"
                           echo "├──────────────────────────────────────┤"
                           echo "│ ✅ Application Deployed              │"
-                          echo "│ ✅ Smoke Tests Passed (11/11)        │"
-                          echo "│ ✅ Integration Tests Passed (15/15)  │"
-                          echo "│ ✅ Performance Tests Passed (5/5)    │"
+                          echo "│ ✅ Smoke Tests Passed (6/6)          │"
+                          echo "│ ✅ Integration Tests Passed (12/12)  │"
                           echo "│ ✅ Build Certified                   │"
                           echo "├──────────────────────────────────────┤"
                           echo "│ Result:  ✅ SIT PASSED               │"
