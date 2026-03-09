@@ -638,6 +638,27 @@ pipeline:
                           echo "Target: $APP_URL"
                           echo ""
 
+                          # Ensure app is reachable before running tests
+                          echo "⏳ Verifying app is ready..."
+                          RETRIES=0
+                          MAX_RETRIES=4
+                          while [ $RETRIES -lt $MAX_RETRIES ]; do
+                            CHECK=$(curl -s -L -o /dev/null -w "%{http_code}" --max-time 30 "$APP_URL/api/health" 2>/dev/null || echo "000")
+                            if [ "$CHECK" -ge 200 ] && [ "$CHECK" -lt 400 ]; then
+                              echo "   ✔ App ready (HTTP $CHECK)"
+                              break
+                            fi
+                            RETRIES=$((RETRIES + 1))
+                            echo "   ⏳ Attempt $RETRIES/$MAX_RETRIES — HTTP $CHECK, retrying in 15s..."
+                            sleep 15
+                          done
+
+                          if [ "$CHECK" -lt 200 ] || [ "$CHECK" -ge 400 ]; then
+                            echo "   ❌ App not reachable after $MAX_RETRIES attempts (HTTP $CHECK)"
+                            exit 1
+                          fi
+                          echo ""
+
                           PASSED=0
                           FAILED=0
 
