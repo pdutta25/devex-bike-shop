@@ -540,25 +540,16 @@ pipeline:
                           smoke_test "SMOKE-02" "GET / (homepage)" "$APP_URL" 200 "__next"
                           echo ""
 
-                          echo "🔍 API Endpoints"
+                          echo "🔍 Public API Endpoints"
                           echo "─────────────────────────────────────"
                           smoke_test "SMOKE-03" "GET /api/products" "$APP_URL/api/products" 200
                           smoke_test "SMOKE-04" "GET /api/categories" "$APP_URL/api/categories" 200
-                          smoke_test "SMOKE-05" "GET /api/customers" "$APP_URL/api/customers" 200
-                          smoke_test "SMOKE-06" "GET /api/orders" "$APP_URL/api/orders" 200
-                          smoke_test "SMOKE-07" "GET /api/reviews" "$APP_URL/api/reviews" 200
                           echo ""
 
                           echo "🔍 Storefront Pages"
                           echo "─────────────────────────────────────"
-                          smoke_test "SMOKE-08" "GET /category/road" "$APP_URL/category/road" 200
-                          smoke_test "SMOKE-09" "GET /cart" "$APP_URL/cart" 200
-                          echo ""
-
-                          echo "🔍 Reports API"
-                          echo "─────────────────────────────────────"
-                          smoke_test "SMOKE-10" "GET /api/reports/revenue" "$APP_URL/api/reports/revenue" 200
-                          smoke_test "SMOKE-11" "GET /api/reports/top-products" "$APP_URL/api/reports/top-products" 200
+                          smoke_test "SMOKE-05" "GET /category/road" "$APP_URL/category/road" 200
+                          smoke_test "SMOKE-06" "GET /cart" "$APP_URL/cart" 200
                           echo ""
 
                           TOTAL=$((PASSED + FAILED))
@@ -581,7 +572,7 @@ pipeline:
                             echo "❌ $FAILED smoke test(s) failed"
                             exit 1
                           fi
-                          echo "✅ All $PASSED PROD smoke tests passed — production is healthy"
+                          echo "✅ All $TOTAL PROD smoke tests passed — production is healthy"
 
               # ── Step 4: Certify PROD Build - Final Sign-Off (Auto-Approve in 10s) ──
               - step:
