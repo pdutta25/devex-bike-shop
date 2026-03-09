@@ -342,6 +342,38 @@ jobs:
             echo "   Response: $EXEC_BODY"
           fi
 
+      - name: Create GitHub Release
+        if: (github.ref == 'refs/heads/main' && github.event_name == 'push') || inputs.test_deploy == true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="v1.0.${{ github.run_number }}"
+          SHORT_SHA="${{ github.sha }}"
+          SHORT_SHA="${SHORT_SHA:0:7}"
+          echo "📦 Creating release: $TAG"
+          gh release create "$TAG" \
+            --title "Release $TAG" \
+            --notes "$(cat <<NOTES
+          ## Release $TAG
+
+          **Commit:** $SHORT_SHA
+          **Branch:** ${{ github.ref_name }}
+          **Build:** #${{ github.run_number }}
+
+          ### CI Checks
+          - ✅ Build (Next.js)
+          - ✅ Lint (ESLint)
+          - ✅ Test (Vitest)
+          - ✅ Security Scan (Trivy + npm audit)
+          - ✅ Code Quality (SonarCloud)
+
+          ### Deployment
+          Deployed via Harness CD pipeline → DEV → SIT → PROD
+          NOTES
+          )" \
+            --target ${{ github.sha }}
+          echo "✅ Release $TAG created"
+
   # ─────────────────────────────────────────
   # STAGE 4: GENERATE DOCS → GITHUB WIKI
   # ─────────────────────────────────────────
