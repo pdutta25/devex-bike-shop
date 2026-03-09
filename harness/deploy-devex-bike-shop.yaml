@@ -361,7 +361,7 @@ pipeline:
 
                             if [ "$STATUS" -ge 200 ] && [ "$STATUS" -lt 400 ]; then
                               if [ -n "$MATCH_BODY" ]; then
-                                if echo "$BODY" | grep -q "$MATCH_BODY"; then
+                                if echo "$BODY" | grep -qF "$MATCH_BODY"; then
                                   echo "   ✔ [$ID] $DESC — HTTP $STATUS"
                                   PASSED=$((PASSED + 1))
                                 else
@@ -656,7 +656,7 @@ pipeline:
 
                             if [ "$STATUS" -ge 200 ] && [ "$STATUS" -lt 400 ]; then
                               if [ -n "$MATCH_BODY" ]; then
-                                if echo "$BODY" | grep -q "$MATCH_BODY"; then
+                                if echo "$BODY" | grep -qF "$MATCH_BODY"; then
                                   echo "   ✔ [$ID] $DESC — HTTP $STATUS (${DURATION}ms)"
                                   PASSED=$((PASSED + 1))
                                 else
