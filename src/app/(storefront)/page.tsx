@@ -61,14 +61,9 @@ export default async function HomePage() {
 
             {/* Headline */}
             <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold tracking-tight leading-[1.1] mb-6 animate-fade-in-up animate-delay-100 text-left">
-              <span className="text-white">This is </span>
-              <span className="text-amber-400">DX Universe</span>
+              <span className="text-white">Ride the </span>
+              <span className="gradient-text">Future</span>
             </h1>
-
-            {/* Sale Badge */}
-            <div className="inline-flex items-center gap-2 bg-red-500/20 border border-red-500/30 rounded-full px-5 py-2 mb-6 animate-fade-in-up animate-delay-150">
-              <span className="text-sm font-bold text-red-400 tracking-wide">🌸 SPRING SALE &nbsp; 30% OFF</span>
-            </div>
 
             {/* Subhead */}
             <p className="text-lg sm:text-xl text-gray-400 leading-relaxed mb-10 max-w-xl animate-fade-in-up animate-delay-200">
@@ -92,13 +87,6 @@ export default async function HomePage() {
               >
                 <span>⚡</span>
                 Explore Electric
-              </Link>
-              <Link
-                href="/category/road"
-                className="inline-flex items-center gap-2 h-13 px-8 text-sm font-semibold rounded-xl bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20 hover:border-red-500/30 transition-all duration-300"
-              >
-                <span>🏷️</span>
-                Bikes on Sale
               </Link>
             </div>
 
