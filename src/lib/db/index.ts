@@ -10,11 +10,14 @@ if (!fs.existsSync(dbDir)) {
 }
 
 const dbPath = path.join(dbDir, "bikeshop.db");
-const sqlite = new Database(dbPath);
+const isBuildPhase = process.env.NEXT_PHASE === "phase-production-build";
+const sqlite = isBuildPhase ? new Database(":memory:") : new Database(dbPath);
 
-sqlite.pragma("journal_mode = WAL");
-sqlite.pragma("foreign_keys = ON");
-sqlite.pragma("busy_timeout = 30000");
+if (!isBuildPhase) {
+  sqlite.pragma("journal_mode = WAL");
+  sqlite.pragma("foreign_keys = ON");
+  sqlite.pragma("busy_timeout = 30000");
+}
 
 // Run migrations inline at module init (CREATE IF NOT EXISTS is idempotent)
 sqlite.exec(`
@@ -115,7 +118,6 @@ export { sqlite };
 // Auto-seed if database is empty (handles Render's ephemeral storage)
 // Uses a ready promise so the app can await seeding before serving requests.
 // Skip during `next build` — multiple build workers would fight over the DB lock.
-const isBuildPhase = process.env.NEXT_PHASE === "phase-production-build";
 const rowCount = sqlite.prepare("SELECT COUNT(*) as count FROM categories").get() as { count: number };
 export const dbReady: Promise<void> =
   !isBuildPhase && rowCount.count === 0
