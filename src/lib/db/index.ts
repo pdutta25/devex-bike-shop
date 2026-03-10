@@ -118,7 +118,6 @@ export { sqlite };
 // Auto-seed if database is empty (handles Render's ephemeral storage)
 // Uses a ready promise so the app can await seeding before serving requests.
 // Skip during `next build` — multiple build workers would fight over the DB lock.
-const isBuildPhase = process.env.NEXT_PHASE === "phase-production-build";
 const rowCount = sqlite.prepare("SELECT COUNT(*) as count FROM categories").get() as { count: number };
 export const dbReady: Promise<void> =
   !isBuildPhase && rowCount.count === 0
