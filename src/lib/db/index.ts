@@ -10,11 +10,14 @@ if (!fs.existsSync(dbDir)) {
 }
 
 const dbPath = path.join(dbDir, "bikeshop.db");
-const sqlite = new Database(dbPath);
+const isBuildPhase = process.env.NEXT_PHASE === "phase-production-build";
+const sqlite = new Database(dbPath, isBuildPhase ? { readonly: true, fileMustExist: false } : undefined);
 
-sqlite.pragma("journal_mode = WAL");
-sqlite.pragma("foreign_keys = ON");
-sqlite.pragma("busy_timeout = 30000");
+if (!isBuildPhase) {
+  sqlite.pragma("journal_mode = WAL");
+  sqlite.pragma("foreign_keys = ON");
+  sqlite.pragma("busy_timeout = 30000");
+}
 
 // Run migrations inline at module init (CREATE IF NOT EXISTS is idempotent)
 sqlite.exec(`
