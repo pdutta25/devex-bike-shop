@@ -11,7 +11,7 @@ if (!fs.existsSync(dbDir)) {
 
 const dbPath = path.join(dbDir, "bikeshop.db");
 const isBuildPhase = process.env.NEXT_PHASE === "phase-production-build";
-const sqlite = new Database(dbPath, isBuildPhase ? { readonly: true, fileMustExist: false } : undefined);
+const sqlite = isBuildPhase ? new Database(":memory:") : new Database(dbPath);
 
 if (!isBuildPhase) {
   sqlite.pragma("journal_mode = WAL");
