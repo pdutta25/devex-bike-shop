@@ -32,7 +32,7 @@ export function CountdownBanner() {
   const pad = (n: number) => String(n).padStart(2, "0");
 
   return (
-    <div className="relative w-full bg-gradient-to-r from-red-600 via-red-500 to-orange-500 text-white overflow-hidden">
+    <div className="fixed top-0 left-0 right-0 z-[60] w-full bg-gradient-to-r from-red-600 via-red-500 to-orange-500 text-white overflow-hidden">
       {/* Shimmer effect */}
       <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent animate-[shimmer_3s_infinite] bg-[length:200%_100%]" />
       <div className="relative flex items-center justify-center gap-3 py-2.5 px-4 text-sm font-semibold tracking-wide">
