@@ -52,17 +52,17 @@ export default async function HomePage() {
         <div className="relative z-10 w-full px-6 sm:px-10 lg:px-16 xl:px-24 py-20">
           <div className="max-w-3xl">
             {/* Badge */}
-            <div className="inline-flex items-center gap-2 bg-white/5 border border-white/10 rounded-full px-4 py-1.5 mb-8 animate-fade-in-up">
-              <span className="w-2 h-2 rounded-full bg-brand-accent animate-pulse" />
-              <span className="text-xs font-medium text-gray-400 uppercase tracking-wider">
-                New 2026 Collection Available
+            <div className="inline-flex items-center gap-2 bg-red-500/10 border border-red-500/30 rounded-full px-4 py-1.5 mb-8 animate-fade-in-up">
+              <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+              <span className="text-xs font-medium text-red-400 uppercase tracking-wider">
+                🌸 Spring Sale — 30% Off Everything
               </span>
             </div>
 
             {/* Headline */}
             <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold tracking-tight leading-[1.1] mb-6 animate-fade-in-up animate-delay-100 text-left">
-              <span className="text-white">Ride the </span>
-              <span className="gradient-text">Future</span>
+              <span className="text-white">This is </span>
+              <span className="gradient-text">DX Universe</span>
             </h1>
 
             {/* Subhead */}
@@ -87,6 +87,13 @@ export default async function HomePage() {
               >
                 <span>⚡</span>
                 Explore Electric
+              </Link>
+              <Link
+                href="/bikes?sort=price_asc"
+                className="inline-flex items-center gap-2 h-13 px-8 text-sm font-semibold rounded-xl bg-red-500/10 text-red-400 border border-red-500/30 hover:bg-red-500/20 hover:border-red-500/50 transition-all duration-300"
+              >
+                <span>🏷️</span>
+                Bikes on Sale
               </Link>
             </div>
 
@@ -165,6 +172,12 @@ export default async function HomePage() {
                       View Details
                     </span>
                   </div>
+                  {/* Sale badge */}
+                  <div className="absolute top-3 left-3">
+                    <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold bg-red-500 text-white shadow-sm uppercase tracking-wide">
+                      30% Off
+                    </span>
+                  </div>
                 </div>
                 <div className="p-5">
                   <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-1.5">
@@ -180,8 +193,8 @@ export default async function HomePage() {
                     </span>
                   </div>
                   <PriceDisplay
-                    price={product.price}
-                    compareAtPrice={product.compareAtPrice}
+                    price={Math.round(product.price * 0.7)}
+                    compareAtPrice={product.price}
                   />
                 </div>
               </Link>
