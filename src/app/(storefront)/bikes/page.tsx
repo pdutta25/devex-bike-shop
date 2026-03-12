@@ -107,11 +107,13 @@ export default async function BikesPage({ searchParams }: BikesPageProps) {
                         </span>
                       </div>
                       {/* Sale badge */}
-                      <div className="absolute top-3 left-3">
-                        <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold bg-red-500 text-white shadow-sm uppercase tracking-wide">
-                          30% Off
-                        </span>
-                      </div>
+                      {product.compareAtPrice && product.compareAtPrice > product.price && (
+                        <div className="absolute top-3 left-3">
+                          <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold bg-red-500 text-white shadow-sm uppercase tracking-wide">
+                            Sale
+                          </span>
+                        </div>
+                      )}
                     </div>
                     <div className="p-5">
                       <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-1.5">
@@ -130,8 +132,8 @@ export default async function BikesPage({ searchParams }: BikesPageProps) {
                         </span>
                       </div>
                       <PriceDisplay
-                        price={Math.round(product.price * 0.7)}
-                        compareAtPrice={product.price}
+                        price={product.price}
+                        compareAtPrice={product.compareAtPrice}
                       />
                     </div>
                   </Link>
