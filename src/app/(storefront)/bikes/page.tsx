@@ -13,6 +13,7 @@ interface BikesPageProps {
     search?: string;
     sort?: string;
     page?: string;
+    onSale?: string;
   }>;
 }
 
@@ -31,6 +32,7 @@ export default async function BikesPage({ searchParams }: BikesPageProps) {
       sort: params.sort,
       page,
       limit: 12,
+      onSale: params.onSale === "true",
     }),
     getCategories(),
   ]);
