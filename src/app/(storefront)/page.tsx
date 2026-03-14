@@ -5,6 +5,7 @@ import { getFeaturedProducts, getCategories } from "@/lib/queries/product-querie
 import { StarRating } from "@/components/ui/star-rating";
 import { PriceDisplay } from "@/components/ui/price-display";
 import { BikeImagePlaceholder } from "@/components/ui/bike-image-placeholder";
+import { applySpringDiscount } from "@/lib/utils";
 
 export default async function HomePage() {
   const [featuredProducts, categories] = await Promise.all([
@@ -65,6 +66,23 @@ export default async function HomePage() {
               <span className="gradient-text">Future</span>
             </h1>
 
+            {/* Spring Sale Badge */}
+            <div className="relative inline-flex items-center gap-3 bg-gradient-to-r from-red-500/10 via-orange-500/10 to-amber-500/10 border border-red-500/30 rounded-2xl px-6 py-3 mb-8 animate-fade-in-up animate-delay-150 overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-to-r from-red-500/5 via-transparent to-amber-500/5 animate-pulse" />
+              <span className="relative text-lg">🌸</span>
+              <div className="relative">
+                <span className="text-sm font-bold text-red-400 tracking-wide">
+                  Spring into savings
+                </span>
+                <span className="block text-xs text-gray-400">
+                  30% off every bike in the shop
+                </span>
+              </div>
+              <Link href="/bikes" className="relative ml-2 text-xs font-bold text-brand-accent hover:text-brand-accent-hover transition-colors">
+                Shop now →
+              </Link>
+            </div>
+
             {/* Subhead */}
             <p className="text-lg sm:text-xl text-gray-400 leading-relaxed mb-10 max-w-xl animate-fade-in-up animate-delay-200">
               Premium bikes built for every journey. From mountain trails to city streets, ride the future with DevEx.
@@ -87,6 +105,13 @@ export default async function HomePage() {
               >
                 <span>⚡</span>
                 Explore Electric
+              </Link>
+              <Link
+                href="/bikes"
+                className="inline-flex items-center gap-2 h-13 px-8 text-sm font-semibold rounded-xl bg-orange-500/10 text-orange-400 border border-orange-500/30 hover:bg-orange-500/20 hover:border-orange-500/50 transition-all duration-300"
+              >
+                <span>🏷️</span>
+                Bikes on Sale
               </Link>
             </div>
 
@@ -165,6 +190,12 @@ export default async function HomePage() {
                       View Details
                     </span>
                   </div>
+                  {/* Sale badge */}
+                  <div className="absolute top-3 left-3">
+                    <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold bg-red-500 text-white shadow-sm uppercase tracking-wide">
+                      30% Off
+                    </span>
+                  </div>
                 </div>
                 <div className="p-5">
                   <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-1.5">
@@ -180,8 +211,8 @@ export default async function HomePage() {
                     </span>
                   </div>
                   <PriceDisplay
-                    price={product.price}
-                    compareAtPrice={product.compareAtPrice}
+                    price={applySpringDiscount(product.price)}
+                    compareAtPrice={product.price}
                   />
                 </div>
               </Link>
