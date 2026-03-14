@@ -183,7 +183,15 @@ async function main() {
     notes = buildFallbackNotes();
   }
 
-  // 4. Write output
+  // 4. Append commit history to notes
+  const lastTag = git("describe --tags --abbrev=0 HEAD~1");
+  const base = lastTag || "HEAD~10";
+  const commitLog = git(`log ${base}..HEAD --pretty=format:"- %s (%h)" --no-merges`);
+  if (commitLog) {
+    notes += `\n\n---\n\n## 📋 Commits in this release\n\n${commitLog}`;
+  }
+
+  // 5. Write output
   writeFileSync(OUTPUT_FILE, notes);
   console.log(`  📄 Written to: ${OUTPUT_FILE}`);
   console.log("\nDone!");

@@ -496,12 +496,25 @@ jobs:
             '- [[Database Schema]]' \
             > wiki-repo/_Sidebar.md
 
+          # Find commits since last release tag
+          LAST_TAG=$(git -C "${{ github.workspace }}" describe --tags --abbrev=0 HEAD~1 2>/dev/null || echo "")
+          if [ -n "$LAST_TAG" ]; then
+            COMMIT_LOG=$(git -C "${{ github.workspace }}" log ${LAST_TAG}..HEAD --pretty=format:"  - %s (%h)" --no-merges)
+            COMMIT_RANGE="${LAST_TAG}..${GITHUB_SHA::7}"
+          else
+            COMMIT_LOG=$(git -C "${{ github.workspace }}" log -5 --pretty=format:"  - %s (%h)" --no-merges)
+            COMMIT_RANGE="last 5 commits"
+          fi
+
           cd wiki-repo
           git add -A
           if git diff --staged --quiet; then
             echo "ℹ️  No doc changes to publish"
           else
-            git commit -m "docs: auto-update from ${GITHUB_SHA::7}"
+            git commit -m "$(printf 'docs: auto-update for %s\n\nGenerated for commits (%s):\n%s' "${GITHUB_SHA::7}" "$COMMIT_RANGE" "$COMMIT_LOG")"
             git push origin HEAD
             echo "✅ Wiki updated successfully"
+            echo ""
+            echo "📋 Commits covered:"
+            echo "$COMMIT_LOG"
           fi
