@@ -1,6 +1,6 @@
 pipeline:
-  name: deploy-devex-bike-shop
-  identifier: deploydevexbikeshop
+  name: release-devex-bike-shop
+  identifier: releasedevexbikeshop
   projectIdentifier: devexbikeshop
   orgIdentifier: default
   tags: {}
@@ -118,76 +118,75 @@ pipeline:
                           echo ""
                           echo "✅ Database deployed to DEV"
 
-              # ── Step 2b: Deploy Services (API) ──
-              - step:
-                  name: Deploy Services
-                  identifier: Deploy_Services
-                  type: ShellScript
-                  timeout: 5m
-                  spec:
-                    shell: Bash
-                    onDelegate: true
-                    source:
-                      type: Inline
+              # ── Step 2b+2c: Deploy Services & UI in Parallel ──
+              - parallel:
+                  - step:
+                      name: Deploy Services
+                      identifier: Deploy_Services
+                      type: ShellScript
+                      timeout: 5m
                       spec:
-                        script: |-
-                          #!/bin/bash
-                          echo "╔══════════════════════════════════════╗"
-                          echo "║  DEPLOY — SERVICES (API)             ║"
-                          echo "╚══════════════════════════════════════╝"
-                          echo ""
-                          echo "⚙️  Deploying API services to DEV"
-                          echo "   Build: #<+pipeline.variables.buildNumber> | Commit: <+pipeline.variables.commitSha>"
-                          echo ""
-                          sleep 2
-                          echo "   Pulling service artifact... ✔"
-                          sleep 2
-                          echo "   Deploying Next.js API routes..."
-                          echo "     ✔ /api/products"
-                          echo "     ✔ /api/categories"
-                          echo "     ✔ /api/orders"
-                          echo "     ✔ /api/cart"
-                          echo "     ✔ /api/health"
-                          sleep 2
-                          echo "   Health check... HTTP 200 ✔"
-                          echo ""
-                          echo "✅ Services deployed to DEV"
-
-              # ── Step 2c: Deploy UI (Storefront) ──
-              - step:
-                  name: Deploy UI
-                  identifier: Deploy_UI
-                  type: ShellScript
-                  timeout: 5m
-                  spec:
-                    shell: Bash
-                    onDelegate: true
-                    source:
-                      type: Inline
+                        shell: Bash
+                        onDelegate: true
+                        source:
+                          type: Inline
+                          spec:
+                            script: |-
+                              #!/bin/bash
+                              echo "╔══════════════════════════════════════╗"
+                              echo "║  DEPLOY — SERVICES (API)    [parallel]║"
+                              echo "╚══════════════════════════════════════╝"
+                              echo ""
+                              echo "⚙️  Deploying API services to DEV"
+                              echo "   Build: #<+pipeline.variables.buildNumber> | Commit: <+pipeline.variables.commitSha>"
+                              echo ""
+                              sleep 2
+                              echo "   Pulling service artifact... ✔"
+                              sleep 2
+                              echo "   Deploying Next.js API routes..."
+                              echo "     ✔ /api/products"
+                              echo "     ✔ /api/categories"
+                              echo "     ✔ /api/orders"
+                              echo "     ✔ /api/cart"
+                              echo "     ✔ /api/health"
+                              sleep 2
+                              echo "   Health check... HTTP 200 ✔"
+                              echo ""
+                              echo "✅ Services deployed to DEV"
+                  - step:
+                      name: Deploy UI
+                      identifier: Deploy_UI
+                      type: ShellScript
+                      timeout: 5m
                       spec:
-                        script: |-
-                          #!/bin/bash
-                          echo "╔══════════════════════════════════════╗"
-                          echo "║  DEPLOY — UI (Storefront)            ║"
-                          echo "╚══════════════════════════════════════╝"
-                          echo ""
-                          echo "🎨 Deploying storefront UI to DEV"
-                          echo "   Build: #<+pipeline.variables.buildNumber> | Commit: <+pipeline.variables.commitSha>"
-                          echo ""
-                          sleep 2
-                          echo "   Deploying static assets... ✔"
-                          sleep 2
-                          echo "   Deploying SSR pages..."
-                          echo "     ✔ Homepage"
-                          echo "     ✔ Product catalog"
-                          echo "     ✔ Product detail"
-                          echo "     ✔ Cart & Checkout"
-                          echo "     ✔ Admin dashboard"
-                          sleep 2
-                          echo "   CDN cache invalidation... ✔"
-                          echo "   Visual diff check... no regressions ✔"
-                          echo ""
-                          echo "✅ UI deployed to DEV"
+                        shell: Bash
+                        onDelegate: true
+                        source:
+                          type: Inline
+                          spec:
+                            script: |-
+                              #!/bin/bash
+                              echo "╔══════════════════════════════════════╗"
+                              echo "║  DEPLOY — UI (Storefront)  [parallel]║"
+                              echo "╚══════════════════════════════════════╝"
+                              echo ""
+                              echo "🎨 Deploying storefront UI to DEV"
+                              echo "   Build: #<+pipeline.variables.buildNumber> | Commit: <+pipeline.variables.commitSha>"
+                              echo ""
+                              sleep 2
+                              echo "   Deploying static assets... ✔"
+                              sleep 2
+                              echo "   Deploying SSR pages..."
+                              echo "     ✔ Homepage"
+                              echo "     ✔ Product catalog"
+                              echo "     ✔ Product detail"
+                              echo "     ✔ Cart & Checkout"
+                              echo "     ✔ Admin dashboard"
+                              sleep 2
+                              echo "   CDN cache invalidation... ✔"
+                              echo "   Visual diff check... no regressions ✔"
+                              echo ""
+                              echo "✅ UI deployed to DEV"
 
               # ── Step 3: DEV Smoke Tests ──
               - step:
@@ -340,77 +339,76 @@ pipeline:
                           echo ""
                           echo "✅ Database deployed to SIT"
 
-              # ── Step 1b: Deploy Services to SIT ──
-              - step:
-                  name: Deploy Services
-                  identifier: SIT_Deploy_Services
-                  type: ShellScript
-                  timeout: 5m
-                  spec:
-                    shell: Bash
-                    onDelegate: true
-                    source:
-                      type: Inline
+              # ── Step 1b+1c: Deploy Services & UI in Parallel ──
+              - parallel:
+                  - step:
+                      name: Deploy Services
+                      identifier: SIT_Deploy_Services
+                      type: ShellScript
+                      timeout: 5m
                       spec:
-                        script: |-
-                          #!/bin/bash
-                          echo "╔══════════════════════════════════════╗"
-                          echo "║  SIT DEPLOY — SERVICES (API)         ║"
-                          echo "╚══════════════════════════════════════╝"
-                          echo ""
-                          echo "⚙️  Deploying API services to SIT"
-                          echo "   Build: #<+pipeline.variables.buildNumber> | Commit: <+pipeline.variables.commitSha>"
-                          echo ""
-                          sleep 2
-                          echo "   Pulling service artifact... ✔"
-                          sleep 2
-                          echo "   Deploying Next.js API routes..."
-                          echo "     ✔ /api/products"
-                          echo "     ✔ /api/categories"
-                          echo "     ✔ /api/orders"
-                          echo "     ✔ /api/cart"
-                          echo "     ✔ /api/health"
-                          sleep 2
-                          echo "   Health check... HTTP 200 ✔"
-                          echo "   API contract validation... ✔"
-                          echo ""
-                          echo "✅ Services deployed to SIT"
-
-              # ── Step 1c: Deploy UI to SIT ──
-              - step:
-                  name: Deploy UI
-                  identifier: SIT_Deploy_UI
-                  type: ShellScript
-                  timeout: 5m
-                  spec:
-                    shell: Bash
-                    onDelegate: true
-                    source:
-                      type: Inline
+                        shell: Bash
+                        onDelegate: true
+                        source:
+                          type: Inline
+                          spec:
+                            script: |-
+                              #!/bin/bash
+                              echo "╔══════════════════════════════════════╗"
+                              echo "║  SIT DEPLOY — SERVICES (API)[parall]║"
+                              echo "╚══════════════════════════════════════╝"
+                              echo ""
+                              echo "⚙️  Deploying API services to SIT"
+                              echo "   Build: #<+pipeline.variables.buildNumber> | Commit: <+pipeline.variables.commitSha>"
+                              echo ""
+                              sleep 2
+                              echo "   Pulling service artifact... ✔"
+                              sleep 2
+                              echo "   Deploying Next.js API routes..."
+                              echo "     ✔ /api/products"
+                              echo "     ✔ /api/categories"
+                              echo "     ✔ /api/orders"
+                              echo "     ✔ /api/cart"
+                              echo "     ✔ /api/health"
+                              sleep 2
+                              echo "   Health check... HTTP 200 ✔"
+                              echo "   API contract validation... ✔"
+                              echo ""
+                              echo "✅ Services deployed to SIT"
+                  - step:
+                      name: Deploy UI
+                      identifier: SIT_Deploy_UI
+                      type: ShellScript
+                      timeout: 5m
                       spec:
-                        script: |-
-                          #!/bin/bash
-                          echo "╔══════════════════════════════════════╗"
-                          echo "║  SIT DEPLOY — UI (Storefront)        ║"
-                          echo "╚══════════════════════════════════════╝"
-                          echo ""
-                          echo "🎨 Deploying storefront UI to SIT"
-                          echo "   Build: #<+pipeline.variables.buildNumber> | Commit: <+pipeline.variables.commitSha>"
-                          echo ""
-                          sleep 2
-                          echo "   Deploying static assets... ✔"
-                          sleep 2
-                          echo "   Deploying SSR pages..."
-                          echo "     ✔ Homepage"
-                          echo "     ✔ Product catalog"
-                          echo "     ✔ Product detail"
-                          echo "     ✔ Cart & Checkout"
-                          echo "     ✔ Admin dashboard"
-                          sleep 2
-                          echo "   CDN cache invalidation... ✔"
-                          echo "   Visual regression test... no diffs ✔"
-                          echo ""
-                          echo "✅ UI deployed to SIT"
+                        shell: Bash
+                        onDelegate: true
+                        source:
+                          type: Inline
+                          spec:
+                            script: |-
+                              #!/bin/bash
+                              echo "╔══════════════════════════════════════╗"
+                              echo "║  SIT DEPLOY — UI (Storefront)[parall]║"
+                              echo "╚══════════════════════════════════════╝"
+                              echo ""
+                              echo "🎨 Deploying storefront UI to SIT"
+                              echo "   Build: #<+pipeline.variables.buildNumber> | Commit: <+pipeline.variables.commitSha>"
+                              echo ""
+                              sleep 2
+                              echo "   Deploying static assets... ✔"
+                              sleep 2
+                              echo "   Deploying SSR pages..."
+                              echo "     ✔ Homepage"
+                              echo "     ✔ Product catalog"
+                              echo "     ✔ Product detail"
+                              echo "     ✔ Cart & Checkout"
+                              echo "     ✔ Admin dashboard"
+                              sleep 2
+                              echo "   CDN cache invalidation... ✔"
+                              echo "   Visual regression test... no diffs ✔"
+                              echo ""
+                              echo "✅ UI deployed to SIT"
 
               # ── Step 2: SIT Smoke Tests ──
               - step:
