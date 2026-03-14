@@ -282,7 +282,20 @@ jobs:
           if [ "$CREATE_CODE" -ge 200 ] && [ "$CREATE_CODE" -lt 300 ]; then
             echo "✅ Pipeline created"
           elif [ "$CREATE_CODE" -eq 409 ] || ([ "$CREATE_CODE" -eq 400 ] && echo "$CREATE_RESPONSE" | grep -q "DUPLICATE_FIELD"); then
-            echo "✅ Pipeline already exists"
+            echo "ℹ️  Pipeline already exists — updating..."
+            UPDATE_RESPONSE=$(curl -s -w "\n%{http_code}" -X PUT \
+              "${BASE_URL}/pipelines/v2/${PIPELINE_ID}?${SCOPE}" \
+              -H "Content-Type: application/yaml" \
+              -H "x-api-key: ${HARNESS_API_KEY}" \
+              -d "$YAML")
+            UPDATE_CODE=$(echo "$UPDATE_RESPONSE" | tail -1)
+            if [ "$UPDATE_CODE" -ge 200 ] && [ "$UPDATE_CODE" -lt 300 ]; then
+              echo "✅ Pipeline updated"
+            else
+              UPDATE_BODY=$(echo "$UPDATE_RESPONSE" | head -n -1)
+              echo "⚠️  Pipeline update returned HTTP $UPDATE_CODE (non-blocking)"
+              echo "   Response: $UPDATE_BODY"
+            fi
           else
             CREATE_BODY=$(echo "$CREATE_RESPONSE" | head -n -1)
             echo "❌ Failed to ensure pipeline (HTTP $CREATE_CODE)"
@@ -350,7 +363,7 @@ jobs:
   # STAGE 4: RELEASE NOTES (Agentic)
   # ─────────────────────────────────────────
   release-notes:
-    name: 🤖 Release Notes (Agentic)
+    name: 🤖 Release Notes (Agent)
     needs: [deploy-gate]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     runs-on: ubuntu-latest
@@ -392,7 +405,7 @@ jobs:
   # STAGE 5: CREATE DOCS → GITHUB WIKI
   # ─────────────────────────────────────────
   create-docs:
-    name: 📚 Create Docs
+    name: 📚 Wiki Updates
     needs: [deploy-gate]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push' && !inputs.test_deploy
     runs-on: ubuntu-latest
