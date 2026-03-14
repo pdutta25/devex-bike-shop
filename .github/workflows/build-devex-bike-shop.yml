@@ -35,7 +35,7 @@ concurrency:
 #   test  ──┤──→ code-quality  ──┤──→ deploy-gate
 #           └────────────────────┘
 #
-# Docs generation runs independently after build (main only).
+# Docs creation runs independently after build (main only).
 # ═══════════════════════════════════════════════════════════
 
 jobs:
@@ -353,7 +353,7 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Generate AI Release Notes
+      - name: Release Notes (Agentic)
         if: (github.ref == 'refs/heads/main' && github.event_name == 'push') || inputs.test_deploy == true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -376,10 +376,10 @@ jobs:
           echo "✅ Release $TAG created with AI-generated notes"
 
   # ─────────────────────────────────────────
-  # STAGE 4: GENERATE DOCS → GITHUB WIKI
+  # STAGE 4: CREATE DOCS → GITHUB WIKI
   # ─────────────────────────────────────────
-  generate-docs:
-    name: 📚 Generate Docs
+  create-docs:
+    name: 📚 Create Docs
     needs: [build]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push' && !inputs.test_deploy
     runs-on: ubuntu-latest
@@ -397,19 +397,19 @@ jobs:
           node-version: '20'
           cache: 'npm'
 
-      - name: Generate static docs (API, Schema)
+      - name: Create static docs (API, Schema)
         run: |
           echo "╔══════════════════════════════════════╗"
-          echo "║    GENERATING STATIC DOCS            ║"
+          echo "║    CREATING STATIC DOCS              ║"
           echo "╚══════════════════════════════════════╝"
           node scripts/generate-docs.mjs
 
-      - name: Generate AI docs (UX)
+      - name: Create AI docs (UX)
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           echo "╔══════════════════════════════════════╗"
-          echo "║    GENERATING AI-POWERED UX DOCS     ║"
+          echo "║    CREATING AI-POWERED UX DOCS       ║"
           echo "║    (GitHub Copilot / Models API)     ║"
           echo "╚══════════════════════════════════════╝"
           node scripts/generate-ai-docs.mjs
