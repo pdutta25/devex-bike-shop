@@ -382,6 +382,7 @@ jobs:
           node-version: '20'
 
       - name: Generate release notes via AI agent
+        timeout-minutes: 2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           OUTPUT_FILE: /tmp/release-notes.md
