@@ -438,6 +438,17 @@ jobs:
           cp docs/API.md              wiki-repo/API-Reference.md
           cp docs/SCHEMA.md           wiki-repo/Database-Schema.md
 
+          # 3. Sidebar — controls wiki page order
+          cat > wiki-repo/_Sidebar.md << 'SIDEBAR'
+          ### 📚 Documentation
+
+          - [[Home]]
+          - [[User Experience]] 🤖
+          - [[Architecture]]
+          - [[API Reference]]
+          - [[Database Schema]]
+          SIDEBAR
+
           cd wiki-repo
           git add -A
           if git diff --staged --quiet; then
