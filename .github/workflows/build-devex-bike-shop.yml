@@ -439,15 +439,15 @@ jobs:
           cp docs/SCHEMA.md           wiki-repo/Database-Schema.md
 
           # 3. Sidebar — controls wiki page order
-          cat > wiki-repo/_Sidebar.md << 'SIDEBAR'
-          ### 📚 Documentation
-
-          - [[Home]]
-          - [[User Experience]] 🤖
-          - [[Architecture]]
-          - [[API Reference]]
-          - [[Database Schema]]
-          SIDEBAR
+          printf '%s\n' \
+            '### 📚 Documentation' \
+            '' \
+            '- [[Home]]' \
+            '- [[User Experience]] 🤖' \
+            '- [[Architecture]]' \
+            '- [[API Reference]]' \
+            '- [[Database Schema]]' \
+            > wiki-repo/_Sidebar.md
 
           cd wiki-repo
           git add -A
