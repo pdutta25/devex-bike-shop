@@ -35,18 +35,12 @@ const BUILD_NUMBER = process.env.BUILD_NUMBER || "";
 const SYSTEM_PROMPT = `You write release notes for a business audience. Use this exact template:
 
 ## 🚀 What's New
-(New features or capabilities added)
-
-## 🔄 What Changed
-(Improvements or updates to existing functionality)
-
-## 🐛 What's Fixed
-(Bug fixes and resolved issues)
+(Bullet points describing what changed and why it matters)
 
 ## 📝 In a nutshell
 (One plain-English sentence anyone on the team can understand)
 
-Write in plain English. Describe WHAT changed and WHY it matters — not file names or commit hashes. If a section has no changes, write NA. Keep each bullet to one line.`;
+Write in plain English. Describe WHAT changed and WHY it matters — not file names or commit hashes. Keep each bullet to one line.`;
 
 // ─────────────────────────────────────────
 // Helpers

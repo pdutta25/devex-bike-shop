@@ -8,10 +8,11 @@ const SESSION_SECRET = process.env.ADMIN_SESSION_SECRET || "devex-bike-shop-demo
 
 // Default credentials — override via environment variables
 const ADMIN_USERNAME = process.env.ADMIN_USERNAME || "admin";
+// NOSONAR: This is a seeded demo hash for the live demo app, not a real credential.
 // Default password stored as bcrypt hash (cost factor 12, never plain text)
 const ADMIN_PASSWORD_HASH =
   process.env.ADMIN_PASSWORD_HASH ||
-  "$2b$12$MCtPy/EAfXwBQp3QmM8qbezwx/Dv.IPUnlRVcXcu1gsrn4Dxm2Nsa";
+  "$2b$12$MCtPy/EAfXwBQp3QmM8qbezwx/Dv.IPUnlRVcXcu1gsrn4Dxm2Nsa"; // NOSONAR
 
 /**
  * HMAC-SHA256 sign using Web Crypto API (works in Edge + Node).
