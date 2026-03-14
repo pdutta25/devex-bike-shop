@@ -31,11 +31,10 @@ concurrency:
 # PIPELINE GRAPH (visible in GitHub Actions UI):
 #
 #   build ──┐
-#   lint  ──┤──→ security-scan ──┐
-#   test  ──┤──→ code-quality  ──┤──→ deploy-gate
-#           └────────────────────┘
+#   lint  ──┤──→ security-scan ──┐                    ┌──→ release-notes
+#   test  ──┤──→ code-quality  ──┤──→ deploy-gate ──→─┤
+#           └────────────────────┘                    └──→ create-docs
 #
-# Docs creation runs independently after build (main only).
 # ═══════════════════════════════════════════════════════════
 
 jobs:
@@ -216,7 +215,6 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
-      models: read
     steps:
       - name: CI Summary
         run: |
@@ -347,14 +345,30 @@ jobs:
             echo "   Response: $EXEC_BODY"
           fi
 
+
+  # ─────────────────────────────────────────
+  # STAGE 4: RELEASE NOTES (Agentic)
+  # ─────────────────────────────────────────
+  release-notes:
+    name: 🤖 Release Notes (Agentic)
+    needs: [deploy-gate]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      models: read
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
       - name: Set up Node.js
-        if: (github.ref == 'refs/heads/main' && github.event_name == 'push') || inputs.test_deploy == true
         uses: actions/setup-node@v4
         with:
           node-version: '20'
 
-      - name: Release Notes (Agentic)
-        if: (github.ref == 'refs/heads/main' && github.event_name == 'push') || inputs.test_deploy == true
+      - name: Generate release notes via AI agent
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           OUTPUT_FILE: /tmp/release-notes.md
@@ -364,7 +378,6 @@ jobs:
         run: node scripts/release-notes-agent.mjs
 
       - name: Create GitHub Release
-        if: (github.ref == 'refs/heads/main' && github.event_name == 'push') || inputs.test_deploy == true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -376,11 +389,11 @@ jobs:
           echo "✅ Release $TAG created with AI-generated notes"
 
   # ─────────────────────────────────────────
-  # STAGE 4: CREATE DOCS → GITHUB WIKI
+  # STAGE 5: CREATE DOCS → GITHUB WIKI
   # ─────────────────────────────────────────
   create-docs:
     name: 📚 Create Docs
-    needs: [build]
+    needs: [deploy-gate]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push' && !inputs.test_deploy
     runs-on: ubuntu-latest
     permissions:
