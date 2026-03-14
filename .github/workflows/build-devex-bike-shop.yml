@@ -214,6 +214,9 @@ jobs:
     needs: [build, lint, test, security-scan, code-quality]
     if: ${{ always() }}
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      models: read
     steps:
       - name: CI Summary
         run: |
@@ -237,6 +240,8 @@ jobs:
       - name: Checkout code
         if: (github.ref == 'refs/heads/main' && github.event_name == 'push') || inputs.test_deploy == true
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Deploy via Harness CD Pipeline
         if: (github.ref == 'refs/heads/main' && github.event_name == 'push') || inputs.test_deploy == true
@@ -342,7 +347,7 @@ jobs:
             echo "   Response: $EXEC_BODY"
           fi
 
-      - name: Create GitHub Release
+      - name: Generate AI Release Notes
         if: (github.ref == 'refs/heads/main' && github.event_name == 'push') || inputs.test_deploy == true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -350,29 +355,70 @@ jobs:
           TAG="v1.0.${{ github.run_number }}"
           SHORT_SHA="${{ github.sha }}"
           SHORT_SHA="${SHORT_SHA:0:7}"
+
+          # ── Gather context for AI ──
+          LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+          if [ -n "$LAST_TAG" ]; then BASE="$LAST_TAG"; else BASE="HEAD~10"; fi
+
+          COMMITS=$(git log "$BASE"..HEAD --pretty=format:"- %s (%h)" --no-merges | head -20)
+          DIFF_STAT=$(git diff "$BASE"..HEAD --stat | tail -1)
+          DIFF=$(git diff "$BASE"..HEAD -- '*.ts' '*.tsx' '*.yml' '*.json' \
+            ':!package-lock.json' ':!*.test.*' | head -300 | head -c 5000)
+
+          # ── Call GitHub Models API ──
+          echo "🤖 Generating AI release notes..."
+          PROMPT=$(cat <<PROMPT_END
+          Here are the commit messages:
+          $COMMITS
+
+          Summary: $DIFF_STAT
+
+          Here is the actual code diff:
+          \`\`\`
+          $DIFF
+          \`\`\`
+
+          Write release notes explaining what actually changed in the code in plain English.
+          PROMPT_END
+          )
+
+          RESPONSE=$(curl -s -X POST "https://models.inference.ai.azure.com/chat/completions" \
+            -H "Content-Type: application/json" \
+            -H "Authorization: Bearer $GITHUB_TOKEN" \
+            -d "$(jq -n \
+              --arg prompt "$PROMPT" \
+              '{
+                model: "gpt-4o-mini",
+                messages: [
+                  {role: "system", content: "You write release notes for a business audience. Use this exact template:\n\n## 🚀 What'\''s New\n(New features or capabilities added)\n\n## 🔄 What Changed\n(Improvements or updates to existing functionality)\n\n## 🐛 What'\''s Fixed\n(Bug fixes and resolved issues)\n\n## 📝 In a nutshell\n(One plain-English sentence anyone on the team can understand)\n\nWrite in plain English. Describe WHAT changed and WHY it matters — not file names or commit hashes. If a section has no changes, write NA. Keep each bullet to one line."},
+                  {role: "user", content: $prompt}
+                ],
+                temperature: 0.3,
+                max_tokens: 2000
+              }')" || true)
+
+          AI_NOTES=$(echo "$RESPONSE" | jq -r '.choices[0].message.content // ""')
+
+          # ── Build release body ──
+          if [ -n "$AI_NOTES" ] && [ "$AI_NOTES" != "null" ]; then
+            NOTES="$AI_NOTES"
+          else
+            echo "⚠️  AI generation failed — using fallback"
+            NOTES="## 📝 In a nutshell
+          Pipeline changes and maintenance updates.
+
+          ## Release Info
+          **Commit:** $SHORT_SHA | **Branch:** ${{ github.ref_name }} | **Build:** #${{ github.run_number }}"
+          fi
+
+          # ── Create release ──
           echo "📦 Creating release: $TAG"
+          echo "$NOTES" > /tmp/release-notes.md
           gh release create "$TAG" \
             --title "Release $TAG" \
-            --notes "$(cat <<NOTES
-          ## Release $TAG
-
-          **Commit:** $SHORT_SHA
-          **Branch:** ${{ github.ref_name }}
-          **Build:** #${{ github.run_number }}
-
-          ### CI Checks
-          - ✅ Build (Next.js)
-          - ✅ Lint (ESLint)
-          - ✅ Test (Vitest)
-          - ✅ Security Scan (Trivy + npm audit)
-          - ✅ Code Quality (SonarCloud)
-
-          ### Deployment
-          Deployed via Harness CD pipeline → DEV → SIT → PROD
-          NOTES
-          )" \
+            --notes-file /tmp/release-notes.md \
             --target ${{ github.sha }}
-          echo "✅ Release $TAG created"
+          echo "✅ Release $TAG created with AI-generated notes"
 
   # ─────────────────────────────────────────
   # STAGE 4: GENERATE DOCS → GITHUB WIKI
