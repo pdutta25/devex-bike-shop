@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useCart } from "@/hooks/use-cart";
-import { formatPrice } from "@/lib/utils";
+import { formatPrice, applySpringDiscount, getDiscountAmount } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { TAX_RATE } from "@/lib/constants";
@@ -37,8 +37,13 @@ export default function CartPage() {
     );
   }
 
-  const estimatedTax = Math.round(subtotal * TAX_RATE);
-  const total = subtotal + estimatedTax;
+  const totalDiscount = items.reduce(
+    (sum, item) => sum + getDiscountAmount(item.price) * item.quantity,
+    0
+  );
+  const discountedSubtotal = subtotal - totalDiscount;
+  const estimatedTax = Math.round(discountedSubtotal * TAX_RATE);
+  const total = discountedSubtotal + estimatedTax;
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
@@ -71,8 +76,11 @@ export default function CartPage() {
                     <span>Color: {item.selectedColor}</span>
                   )}
                 </div>
-                <p className="font-semibold text-white mt-2">
+                <p className="text-gray-400 text-xs line-through">
                   {formatPrice(item.price)}
+                </p>
+                <p className="font-semibold text-red-400 mt-1">
+                  {formatPrice(applySpringDiscount(item.price))}
                 </p>
               </div>
 
@@ -110,8 +118,8 @@ export default function CartPage() {
                     +
                   </button>
                 </div>
-                <p className="text-sm font-semibold text-white">
-                  {formatPrice(item.price * item.quantity)}
+                <p className="text-sm font-semibold text-red-400">
+                  {formatPrice(applySpringDiscount(item.price) * item.quantity)}
                 </p>
               </div>
             </div>
@@ -127,7 +135,11 @@ export default function CartPage() {
             <div className="space-y-3 text-sm">
               <div className="flex justify-between text-gray-400">
                 <span>Subtotal</span>
-                <span>{formatPrice(subtotal)}</span>
+                <span className="line-through">{formatPrice(subtotal)}</span>
+              </div>
+              <div className="flex justify-between text-red-400 font-medium">
+                <span>🌸 Spring Sale Discount (30%)</span>
+                <span>-{formatPrice(totalDiscount)}</span>
               </div>
               <div className="flex justify-between text-gray-400">
                 <span>Estimated Tax (8.5%)</span>
