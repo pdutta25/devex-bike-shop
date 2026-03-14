@@ -30,10 +30,10 @@ concurrency:
 # ═══════════════════════════════════════════════════════════
 # PIPELINE GRAPH (visible in GitHub Actions UI):
 #
-#   build ──┐
-#   lint  ──┤──→ security-scan ──┐                    ┌──→ release-notes
-#   test  ──┤──→ code-quality  ──┤──→ deploy-gate ──→─┤
-#           └────────────────────┘                    └──→ create-docs
+#   build ──┬──→ security-scan ──┐
+#   lint  ──┤──→ code-quality  ──┤──→ deploy-gate
+#   test  ──┤──→ release-notes
+#           └──→ wiki-updates
 #
 # ═══════════════════════════════════════════════════════════
 
@@ -360,11 +360,11 @@ jobs:
 
 
   # ─────────────────────────────────────────
-  # STAGE 4: RELEASE NOTES (Agentic)
+  # STAGE 3b: RELEASE NOTES (Agent) — parallel with security/quality/deploy
   # ─────────────────────────────────────────
   release-notes:
     name: 🤖 Release Notes (Agent)
-    needs: [deploy-gate]
+    needs: [build]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     runs-on: ubuntu-latest
     permissions:
@@ -403,11 +403,11 @@ jobs:
           echo "✅ Release $TAG created with AI-generated notes"
 
   # ─────────────────────────────────────────
-  # STAGE 5: CREATE DOCS → GITHUB WIKI
+  # STAGE 3c: WIKI UPDATES — parallel with security/quality/deploy
   # ─────────────────────────────────────────
   create-docs:
     name: 📚 Wiki Updates
-    needs: [deploy-gate]
+    needs: [build]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push' && !inputs.test_deploy
     runs-on: ubuntu-latest
     permissions:
