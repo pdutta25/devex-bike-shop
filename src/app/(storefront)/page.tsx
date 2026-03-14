@@ -5,7 +5,6 @@ import { getFeaturedProducts, getCategories } from "@/lib/queries/product-querie
 import { StarRating } from "@/components/ui/star-rating";
 import { PriceDisplay } from "@/components/ui/price-display";
 import { BikeImagePlaceholder } from "@/components/ui/bike-image-placeholder";
-import { applySpringDiscount } from "@/lib/utils";
 
 export default async function HomePage() {
   const [featuredProducts, categories] = await Promise.all([
@@ -66,20 +65,6 @@ export default async function HomePage() {
               <span className="gradient-text">Future</span>
             </h1>
 
-            {/* Spring Sale Badge */}
-            <div className="relative inline-flex items-center gap-3 bg-gradient-to-r from-red-500/10 via-orange-500/10 to-amber-500/10 border border-red-500/30 rounded-2xl px-6 py-3 mb-8 animate-fade-in-up animate-delay-150 overflow-hidden">
-              <div className="absolute inset-0 bg-gradient-to-r from-red-500/5 via-transparent to-amber-500/5 animate-pulse" />
-              <span className="relative text-lg">🌸</span>
-              <div className="relative">
-                <span className="text-sm font-bold text-red-400 tracking-wide">
-                  Spring into savings
-                </span>
-                <span className="block text-xs text-gray-400">
-                  30% off every bike in the shop
-                </span>
-              </div>
-            </div>
-
             {/* Subhead */}
             <p className="text-lg sm:text-xl text-gray-400 leading-relaxed mb-10 max-w-xl animate-fade-in-up animate-delay-200">
               Premium bikes built for every journey. From mountain trails to city streets, ride the future with DevEx.
@@ -102,13 +87,6 @@ export default async function HomePage() {
               >
                 <span>⚡</span>
                 Explore Electric
-              </Link>
-              <Link
-                href="/bikes?onSale=true"
-                className="inline-flex items-center gap-2 h-13 px-8 text-sm font-semibold rounded-xl bg-orange-500/10 text-orange-400 border border-orange-500/30 hover:bg-orange-500/20 hover:border-orange-500/50 transition-all duration-300"
-              >
-                <span>🏷️</span>
-                Bikes on Sale
               </Link>
             </div>
 

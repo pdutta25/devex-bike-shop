@@ -1,6 +1,6 @@
 import { db, dbReady } from "@/lib/db";
 import { products, categories } from "@/lib/db/schema";
-import { eq, and, gte, lte, like, desc, asc, sql, isNotNull } from "drizzle-orm";
+import { eq, and, gte, lte, like, desc, asc, sql } from "drizzle-orm";
 
 interface ProductFilters {
   category?: string;
@@ -12,7 +12,6 @@ interface ProductFilters {
   limit?: number;
   featured?: boolean;
   active?: boolean;
-  onSale?: boolean;
 }
 
 // Build a lookup map of categoryId -> slug
@@ -74,10 +73,6 @@ export async function getProducts(filters: ProductFilters = {}) {
 
   if (featured) {
     conditions.push(eq(products.isFeatured, true));
-  }
-
-  if (filters.onSale) {
-    conditions.push(isNotNull(products.compareAtPrice));
   }
 
   const whereClause = conditions.length > 0 ? and(...conditions) : undefined;

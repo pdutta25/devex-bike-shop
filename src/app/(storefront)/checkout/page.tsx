@@ -6,7 +6,7 @@ import Link from "next/link";
 import { useCart } from "@/hooks/use-cart";
 import { useCustomer } from "@/hooks/use-customer";
 import { useToast } from "@/hooks/use-toast";
-import { formatPrice, applySpringDiscount, getDiscountAmount } from "@/lib/utils";
+import { formatPrice } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
@@ -61,14 +61,9 @@ export default function CheckoutPage() {
     );
   }
 
-  const totalDiscount = items.reduce(
-    (sum, item) => sum + getDiscountAmount(item.price) * item.quantity,
-    0
-  );
-  const discountedSubtotal = subtotal - totalDiscount;
   const shippingCost = fulfillment === "delivery" ? SHIPPING_COST : 0;
-  const estimatedTax = Math.round(discountedSubtotal * TAX_RATE);
-  const total = discountedSubtotal + estimatedTax + shippingCost;
+  const estimatedTax = Math.round(subtotal * TAX_RATE);
+  const total = subtotal + estimatedTax + shippingCost;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -282,14 +277,9 @@ export default function CheckoutPage() {
                         Qty: {item.quantity}
                       </p>
                     </div>
-                    <div className="text-right ml-2">
-                      <span className="text-gray-500 line-through text-xs">
-                        {formatPrice(item.price * item.quantity)}
-                      </span>
-                      <span className="block text-red-400 font-medium">
-                        {formatPrice(applySpringDiscount(item.price) * item.quantity)}
-                      </span>
-                    </div>
+                    <span className="text-white ml-2">
+                      {formatPrice(item.price * item.quantity)}
+                    </span>
                   </div>
                 ))}
               </div>
@@ -297,11 +287,7 @@ export default function CheckoutPage() {
               <div className="border-t border-white/10 pt-3 space-y-2 text-sm">
                 <div className="flex justify-between text-gray-400">
                   <span>Subtotal</span>
-                  <span className="line-through">{formatPrice(subtotal)}</span>
-                </div>
-                <div className="flex justify-between text-red-400 font-medium">
-                  <span>🌸 Spring Sale (30%)</span>
-                  <span>-{formatPrice(totalDiscount)}</span>
+                  <span>{formatPrice(subtotal)}</span>
                 </div>
                 {fulfillment === "delivery" && (
                   <div className="flex justify-between text-gray-400">

@@ -13,16 +13,6 @@ export function formatPrice(cents: number): string {
   }).format(cents / 100);
 }
 
-export const SPRING_SALE_DISCOUNT = 0.3;
-
-export function applySpringDiscount(priceInCents: number): number {
-  return Math.round(priceInCents * (1 - SPRING_SALE_DISCOUNT));
-}
-
-export function getDiscountAmount(priceInCents: number): number {
-  return priceInCents - applySpringDiscount(priceInCents);
-}
-
 // SECURITY (V-18): Use cryptographically secure random bytes for order numbers.
 // 8 hex chars = 4 billion possible values per day — infeasible to enumerate.
 export function generateOrderNumber(): string {
