@@ -148,8 +148,31 @@ async function main() {
 
   console.log("  🎨 Calling GitHub Models API...");
   const uxDoc = await callGitHubModel(
-    `You are a senior UX engineer writing user experience documentation for a project wiki. Write professional markdown. Cover: design system (colors, typography, animations), user flows (browse → cart → checkout → tracking), component library, responsive design, navigation structure. Be concise but comprehensive.`,
-    `Generate a User Experience doc for this Next.js e-commerce app:\n\n${uxContext}`
+    `You are a senior UX engineer writing user experience documentation for a project wiki. Use this exact template:
+
+## 🛒 Customer Journey
+Describe the end-to-end flow: Browse → Category → Product → Cart → Checkout → Confirmation → Order Tracking. One sentence per step.
+
+## 📄 Pages
+| Page | URL | What It Does |
+|------|-----|-------------|
+(List every storefront and admin page with a one-line description)
+
+## 🎨 Design System
+### Colors
+(List primary, accent, background colors with hex values)
+### Typography
+(Font family, heading sizes, body sizes)
+### Components
+(List key reusable UI components and what they do)
+### Animations
+(Describe hover effects, transitions, loading states)
+
+## 📱 Responsive Design
+(How the app adapts: mobile, tablet, desktop)
+
+Be concise. One line per bullet. Use tables where possible.`,
+    `Generate a User Experience doc for this Next.js e-commerce bike shop app:\n\n${uxContext}`
   );
 
   const uxMd = `# User Experience\n\n> AI-generated documentation — auto-updated on every push to main.\n\n${uxDoc}`;

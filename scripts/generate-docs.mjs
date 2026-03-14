@@ -345,6 +345,7 @@ function generateReadme(apiMd, schemaMd, archMd) {
   md += `> Auto-generated on ${timestamp()}. Do not edit manually — run \`npm run docs\` to regenerate.\n\n`;
 
   md += `## Table of Contents\n\n`;
+  md += `- [User Experience](./USER-EXPERIENCE.md) 🤖\n`;
   md += `- [Architecture](./ARCHITECTURE.md)\n`;
   md += `- [API Reference](./API.md)\n`;
   md += `- [Database Schema](./SCHEMA.md)\n\n`;

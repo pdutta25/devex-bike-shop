@@ -430,13 +430,13 @@ jobs:
           # Copy repo README as wiki home page
           cp README.md                wiki-repo/Home.md
 
-          # Static docs (code-scanned)
+          # 1. AI-generated docs (GitHub Copilot) — human-facing first
+          cp docs/USER-EXPERIENCE.md  wiki-repo/User-Experience.md
+          cp docs/ARCHITECTURE.md     wiki-repo/Architecture.md
+
+          # 2. Static docs (code-scanned) — technical reference
           cp docs/API.md              wiki-repo/API-Reference.md
           cp docs/SCHEMA.md           wiki-repo/Database-Schema.md
-
-          # AI-generated docs (GitHub Copilot)
-          cp docs/ARCHITECTURE.md     wiki-repo/Architecture.md
-          cp docs/USER-EXPERIENCE.md  wiki-repo/User-Experience.md
 
           cd wiki-repo
           git add -A
