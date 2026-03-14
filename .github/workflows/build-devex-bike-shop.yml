@@ -427,8 +427,27 @@ jobs:
             mkdir wiki-repo && cd wiki-repo && git init && git remote add origin "$WIKI_URL"
           }
 
-          # Copy repo README as wiki home page
-          cp README.md                wiki-repo/Home.md
+          # Wiki Home page — clean landing
+          printf '%s\n' \
+            '# 🚲 DevEx Bike Shop — Wiki' \
+            '' \
+            '> Auto-generated documentation — updated on every push to main.' \
+            '' \
+            '---' \
+            '' \
+            '## 📚 Documentation' \
+            '' \
+            '| Page | Description |' \
+            '|------|-------------|' \
+            '| [[User Experience]] 🤖 | Customer journey, pages, design system |' \
+            '| [[Architecture]] | Tech stack, project structure, security, CI/CD |' \
+            '| [[API Reference]] | REST endpoints, auth, validation schemas |' \
+            '| [[Database Schema]] | Tables, columns, relationships |' \
+            '' \
+            '---' \
+            '' \
+            '🤖 = AI-generated using GitHub Copilot / Models API' \
+            > wiki-repo/Home.md
 
           # 1. AI-generated docs (GitHub Copilot) — human-facing first
           cp docs/USER-EXPERIENCE.md  wiki-repo/User-Experience.md
