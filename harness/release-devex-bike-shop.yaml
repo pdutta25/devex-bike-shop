@@ -754,8 +754,8 @@ pipeline:
                               echo ""
                               echo "✅ Services deployed to PROD"
                   - step:
-                      name: Deploy UI (Render)
-                      identifier: PROD_Deploy_UI_Render
+                      name: Deploy UI
+                      identifier: PROD_Deploy_UI
                       type: ShellScript
                       timeout: 10m
                       spec:
